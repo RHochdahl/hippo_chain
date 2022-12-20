@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="parent" />
+    <arg name="ahead_of_parent" />
+
+    <arg name="load_joint" default="true" />
+    <arg name="joint_type" default="revolute" />
+    <arg name="vehicle_type" default="hippocampus" />
+
+    <arg name="vehicle_file" default="$(find hippo_chain)/config/vehicle/$(arg vehicle_type).launch" />
+    <arg name="thruster_file" default="$(find hippo_chain)/config/thruster/$(arg vehicle_type).launch" />
+    <arg name="joint_file" default="$(find hippo_chain)/config/joints/$(arg joint_type).launch" />
+
+    <include file="$(find hippo_chain)/config/controller/vehicle/vehicle_controller.launch" pass_all_args="true" />
+
+    <include ns="joint" file="$(arg joint_file)" >
+        <arg name="ahead_of_parent" value="$(arg ahead_of_parent)" />
+    </include>
+</launch>

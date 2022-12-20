@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="parent" default="base" />
+
+    <arg name="vehicle_file" default="$(find hippo_chain)/config/vehicle/hippocampus.launch" />
+    <arg name="thruster_file" default="$(find hippo_chain)/config/thruster/hippocampus.launch" />
+
+    <param name="parent" value="$(arg parent)" type="string" />
+
+    <include ns="vehicle_model" file="$(arg vehicle_file)" />
+
+    <include ns="thruster_model" file="$(arg thruster_file)" />
+</launch>

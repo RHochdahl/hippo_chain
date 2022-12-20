@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="base_file" value="$(find hippo_chain)/config/controller/vehicle/vehicle_controller.launch" />
+    <arg name="child_file" value="$(find hippo_chain)/config/controller/vehicle/child_vehicle_controller.launch" />
+
+    <include ns="uuv00" file="$(arg base_file)" />
+
+    <include ns="uuv01" file="$(arg child_file)" >
+        <arg name="ahead_of_parent" value="true" />
+        <arg name="parent" value="uuv00" />
+    </include>
+</launch>

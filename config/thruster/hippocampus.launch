@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<launch>
+    <include ns="0" file="$(find hippo_chain)/config/thruster/hippocampus_single_thruster.launch" >
+        <arg name="clockwise" value="1" />
+        <arg name="is_upper" value="1" />
+        <arg name="is_left" value="1" />
+    </include>
+
+    <include ns="1" file="$(find hippo_chain)/config/thruster/hippocampus_single_thruster.launch" >
+        <arg name="clockwise" value="1" />
+        <arg name="is_upper" value="1" />
+        <arg name="is_left" value="1" />
+    </include>
+
+    <include ns="2" file="$(find hippo_chain)/config/thruster/hippocampus_single_thruster.launch" >
+        <arg name="clockwise" value="1" />
+        <arg name="is_upper" value="1" />
+        <arg name="is_left" value="1" />
+    </include>
+
+    <include ns="3" file="$(find hippo_chain)/config/thruster/hippocampus_single_thruster.launch" >
+        <arg name="clockwise" value="1" />
+        <arg name="is_upper" value="1" />
+        <arg name="is_left" value="1" />
+    </include>
+</launch>

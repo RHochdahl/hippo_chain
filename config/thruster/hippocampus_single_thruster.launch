@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="clockwise" />
+    <arg name="is_upper" />
+    <arg name="is_left" />
+
+    <arg name="dist" value="0.1" />
+
+    <param name="max_force" value="1" type="double" />
+    <param name="max_torque" value="1" type="double" />
+    <param name="clockwise" value="$(arg clockwise)" type="bool" />
+    <param if="$(arg is_left)"      name="pos_y" value="$(arg dist)" type="double" />
+    <param unless="$(arg is_left)"  name="pos_y" value="$(eval -arg('dist'))" type="double" />
+    <param if="$(arg is_upper)"     name="pos_z" value="$(arg dist)" type="double" />
+    <param unless="$(arg is_upper)" name="pos_z" value="$(eval -arg('dist'))" type="double" />
+</launch>
