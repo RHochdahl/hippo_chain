@@ -38,6 +38,7 @@ private:
     ros::ServiceServer startSrv;
     ros::ServiceServer pauseSrv;
     ros::ServiceServer addVehiclesSrv;
+    ros::Rate rate;
 
     std::shared_ptr<std::map<int, int>> idMap;
 
@@ -246,7 +247,8 @@ private:
     
 
 public:
-    ChainController(std::vector<std::string> vehicles, const bool autoStart) : ChainController()
+    ChainController(std::vector<std::string> vehicles, const bool autoStart, const double rate)
+    : ChainController(rate)
     {
         if (!vehicles.size()) {
             vehicles = configProvider.getChainVehicleNames();
@@ -263,7 +265,7 @@ public:
         if (autoStart) start();
     }
 
-    ChainController()
+    ChainController(const double rate)
     : running(false)
     , modified(true)
     , nh(new ros::NodeHandle())
@@ -271,6 +273,7 @@ public:
     , startSrv(nh->advertiseService("chain_controller/start", &ChainController::startCallback, this))
     , pauseSrv(nh->advertiseService("chain_controller/pause", &ChainController::pauseCallback, this))
     , addVehiclesSrv(nh->advertiseService("chain_controller/addVehicles", &ChainController::addVehiclesCallback, this))
+    , rate(rate)
     , idMap(new std::map<int, int>())
     , vehicleControllers(0)
     , numVehicles(0)
@@ -282,6 +285,8 @@ public:
     {
         server.setCallback(f);
     }
+
+    ChainController() : ChainController(20.0) {}
 
     ~ChainController()
     {
@@ -297,11 +302,13 @@ public:
 
             if (!running) {
                 stopThrusters();    // continue to send zeros to remain armed
+                rate.sleep();
                 continue;
             }
 
             if (inputProvider->isUnsafe()) {
                 pause();
+                rate.sleep();
                 continue;
             }
 
@@ -332,6 +339,8 @@ public:
             }
 
             sendThrusterCommands(lsqSolver->solve(B, eta));
+
+            rate.sleep();
         }
     }
 };

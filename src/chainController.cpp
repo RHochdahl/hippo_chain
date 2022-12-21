@@ -8,6 +8,7 @@ namespace po = boost::program_options;
 struct ControllerOptions
 {
     std::vector<std::string> vehicles;
+    double rate = 20.0;
     bool autostart = false;
 };
 
@@ -20,6 +21,7 @@ ControllerOptions parseArgs(int argc, char **argv)
     descriptions.add_options()
         ("help,h", "produce help message")
         ("autostart", "start controller automatically")
+        ("rate,r", po::value<double>(), "rate of controller in Hz")
         ("vehicles", po::value< std::vector<std::string> >()->multitoken(), "names of vehicles in chain");
      
     po::variables_map varMap;
@@ -41,6 +43,9 @@ ControllerOptions parseArgs(int argc, char **argv)
         std::cout << descriptions << std::endl;
         exit(0);
     }
+
+    if (varMap.count("rate"))
+        options.rate = varMap["rate"].as<double>();
  
     if (varMap.count("autostart"))
         options.autostart = true;
@@ -64,7 +69,7 @@ int main(int argc, char **argv)
 
     ros::init(argc, argv, "chain_controller");
 
-    ChainController controller(options.vehicles, options.autostart);
+    ChainController controller(options.vehicles, options.autostart, options.rate);
 
     controller.spin();
 
