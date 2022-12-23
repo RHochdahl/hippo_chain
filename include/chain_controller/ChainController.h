@@ -61,6 +61,7 @@ private:
 
     Eigen::MatrixXd B;
     Eigen::VectorXd eta;
+    Eigen::VectorXd nu;
 
     std::unique_ptr<LeastSquaresSolver> lsqSolver;
 
@@ -78,8 +79,9 @@ private:
         startIdxList.push_back(totalDof);
         totalDof += dof;
 
-        B.conservativeResize(totalDof, 4*numVehicles);
-        eta.conservativeResize(totalDof);
+        nu = Eigen::VectorXd::Zero(4*numVehicles);
+        B = Eigen::MatrixXd::Zero(totalDof, 4*numVehicles);
+        eta = Eigen::VectorXd::Zero(totalDof);
 
         ROS_INFO("Added vehicle with ID %i to chain controller.", publicId);
 
@@ -262,6 +264,10 @@ public:
 
         ROS_INFO("Constructed chain controller for %i vehicles", numVehicles);
 
+        nu = Eigen::VectorXd::Zero(4*numVehicles);
+        B = Eigen::MatrixXd::Zero(totalDof, 4*numVehicles);
+        eta = Eigen::VectorXd::Zero(totalDof);
+
         if (autoStart) start();
     }
 
@@ -312,7 +318,11 @@ public:
                 continue;
             }
 
-            if (!inputProvider->hasNewInputs()) continue;
+            if (!inputProvider->hasNewInputs()) {
+                sendThrusterCommands(nu);
+                rate.sleep();
+                continue;
+            }
 
             {
                 int id = 0;
@@ -338,7 +348,8 @@ public:
                 }
             }
 
-            sendThrusterCommands(lsqSolver->solve(B, eta));
+            nu = lsqSolver->solve(B, eta);
+            sendThrusterCommands(nu);
 
             rate.sleep();
         }

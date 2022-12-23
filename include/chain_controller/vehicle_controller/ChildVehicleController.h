@@ -11,7 +11,7 @@
 template<typename JointModel>
 class ChildVehicleController : public VehicleController
 {
-protected:
+private:
     const std::shared_ptr<VehicleController> parent;
 
     JointModel jointModel;
