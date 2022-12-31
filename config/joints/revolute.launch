@@ -3,7 +3,7 @@
     <param name="type" value="revolute" type="string" />
 
     <arg name="ahead_of_parent" />
-    <arg name="x_pos" default="0.3" />
+    <arg name="x_pos" default="0.275" />
     <arg name="axis" default="3" />
 
     <param if="$(arg ahead_of_parent)" name="x_pos" value="$(eval -arg('x_pos'))" type="double" />

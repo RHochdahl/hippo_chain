@@ -1,41 +1,41 @@
 <?xml version="1.0"?>
 <launch>
-    <param name="rigid_mass" value="1" type="double" />
+    <param name="rigid_mass" value="1.47" type="double" />
 
     <group ns="added_mass">
-        <param name="x" value="1" type="double" />
-        <param name="y" value="1" type="double" />
-        <param name="z" value="1" type="double" />
+        <param name="x" value="1.11"    type="double" />
+        <param name="y" value="2.8"     type="double" />
+        <param name="z" value="2.8"     type="double" />
     </group>
 
     <group ns="rigid_inertia">
-        <param name="roll" value="1" type="double" />
-        <param name="pitch" value="1" type="double" />
-        <param name="yaw" value="1" type="double" />
+        <param name="roll"  value="0.0024"      type="double" />
+        <param name="pitch" value="0.010717"    type="double" />
+        <param name="yaw"   value="0.010717"    type="double" />
     </group>
 
     <group ns="added_inertia">
-        <param name="roll" value="1" type="double" />
-        <param name="pitch" value="1" type="double" />
-        <param name="yaw" value="1" type="double" />
+        <param name="roll"  value="0.00451"     type="double" />
+        <param name="pitch" value="0.0163"      type="double" />
+        <param name="yaw"   value="0.0163"      type="double" />
     </group>
 
     <group ns="drag">
         <group ns="linear">
-            <param name="x" value="1" type="double" />
-            <param name="y" value="1" type="double" />
-            <param name="z" value="1" type="double" />
-            <param name="roll" value="1" type="double" />
-            <param name="pitch" value="1" type="double" />
-            <param name="yaw" value="1" type="double" />
+            <param name="x"         value="5.39"        type="double" />
+            <param name="y"         value="17.36"       type="double" />
+            <param name="z"         value="17.36"       type="double" />
+            <param name="roll"      value="0.00114"     type="double" />
+            <param name="pitch"     value="0.007"       type="double" />
+            <param name="yaw"       value="0.007"       type="double" />
         </group>
         <group ns="quadratic">
-            <param name="x" value="1" type="double" />
-            <param name="y" value="1" type="double" />
-            <param name="z" value="1" type="double" />
-            <param name="roll" value="1" type="double" />
-            <param name="pitch" value="1" type="double" />
-            <param name="yaw" value="1" type="double" />
+            <param name="x"         value="0"   type="double" />
+            <param name="y"         value="0"   type="double" />
+            <param name="z"         value="0"   type="double" />
+            <param name="roll"      value="0"   type="double" />
+            <param name="pitch"     value="0"   type="double" />
+            <param name="yaw"       value="0"   type="double" />
         </group>
     </group>
 </launch>
