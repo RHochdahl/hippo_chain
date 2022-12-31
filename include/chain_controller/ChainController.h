@@ -22,15 +22,6 @@
 class ChainController
 {
 private:
-    class addition_error : public std::runtime_error
-    {
-    public:
-        addition_error(const std::string& __arg) : std::runtime_error(__arg)
-        {
-            ROS_ERROR("%s", __arg.c_str());
-        }
-    };
-
     bool running;
     bool modified;
     std::shared_ptr<ros::NodeHandle> nh;
@@ -93,7 +84,8 @@ private:
         if (running)                        throw addition_error("Controller still running. Couldn't add vehicle.");
         if (param.publicId < 0)             throw addition_error("Vehicle has invalid ID! Couldn't add vehicle.");
         if (param.parentId < 0)             throw addition_error("Named parent vehicle has invalid ID! Couldn't add vehicle.");
-        if (!idMap->count(param.parentId))  throw addition_error("Vehicle has already been added.");
+        if (!idMap->count(param.parentId))  throw addition_error("Parent has not been added yet.");
+        if (idMap->count(param.publicId))   throw addition_error("Vehicle has already been added.");
 
         try
         {
@@ -268,7 +260,10 @@ public:
         B = Eigen::MatrixXd::Zero(totalDof, 4*numVehicles);
         eta = Eigen::VectorXd::Zero(totalDof);
 
-        if (autoStart) start();
+        if (autoStart) {
+            ros::Duration(5.0).sleep();
+            start();
+        }
     }
 
     ChainController(const double rate)
@@ -324,6 +319,7 @@ public:
                 continue;
             }
 
+            try
             {
                 int id = 0;
                 std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>> Bpart;
@@ -337,6 +333,12 @@ public:
                     }
                     Bpart.clear();
                 }
+            }
+            catch(const auto_print_error& e)
+            {
+                pause();
+                rate.sleep();
+                continue;
             }
 
             {

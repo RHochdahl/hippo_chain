@@ -50,6 +50,9 @@ private:
         controllerStates.desiredPose = desiredState->getPose<Eigen::Vector7d>();
         controllerStates.desiredTwist = desiredState->getTwist<Eigen::Vector6d>();
 
+        if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows(4))) throw quaternion_error();
+        if (!shared::isUnitQuaternion(poseAbs.bottomRows(4))) throw quaternion_error();
+
         const double rQuatDes = controllerStates.desiredPose[3];
         const Eigen::Vector3d iQuatDes = controllerStates.desiredPose.bottomRows(3);
         const double rQuatAct = poseAbs[3];
@@ -102,6 +105,8 @@ public:
      */
     void updateVehicleState(const std::shared_ptr<StateProvider> newState)
     {
+        if (newState == NULL) throw auto_print_error("New state is not initialized!");
+
         poseAbs = newState->getPose<Eigen::Vector7d>();
         xiAbs = newState->getTwist<Eigen::Vector6d>();
     }
@@ -113,6 +118,8 @@ public:
      */
     void calcDecoupledWrenches(const std::shared_ptr<StateProvider> desiredState)
     {
+        if (desiredState == NULL) throw auto_print_error("Desired state is not initialized!");
+
         calcSigma(desiredState);
         tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot);
     }

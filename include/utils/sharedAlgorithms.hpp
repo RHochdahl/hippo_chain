@@ -15,6 +15,11 @@ namespace shared
         return (T(0) < val) - (val < T(0));
     }
 
+    static inline bool isUnitQuaternion(const Eigen::Vector4d& quat)
+    {
+        return (std::abs(quat.norm() - 1.0) < 1e-12);
+    }
+
     static inline Eigen::Vector3d cross3(const Eigen::Vector3d& first, const Eigen::Vector3d& second)
     {
         Eigen::Vector3d res;
