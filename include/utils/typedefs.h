@@ -2,6 +2,7 @@
 #define TYPEDEFS_H
 
 #include "defines.h"
+#include "CustomExceptions.h"
 #include <Eigen/Dense>
 
 namespace Eigen {

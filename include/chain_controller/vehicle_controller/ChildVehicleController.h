@@ -68,6 +68,7 @@ public:
      */
     void updateVehicleState(const std::shared_ptr<StateProvider> newState)
     {
+        if (newState == NULL) throw auto_print_error("New state is not initialized!");
         jointModel.update(newState);
     }
 
@@ -83,6 +84,8 @@ public:
 
     void calcDecoupledWrenches(const std::shared_ptr<StateProvider> desiredState)
     {
+        if (desiredState == NULL) throw auto_print_error("Desired state is not initialized!");
+
         controllerStates.thetaDes = desiredState->getPose<typename JointModel::JointVector>();
         controllerStates.zetaDes = desiredState->getTwist<typename JointModel::JointVector>();
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
