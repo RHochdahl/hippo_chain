@@ -89,7 +89,7 @@ private:
 
         try
         {
-            return addVehicle(ChildFactory::bearChild(vehicleControllers[idMap->at(param.parentId)], param.name, param.jointType), param.publicId);
+            return addVehicle(ChildFactory::bearChild(vehicleControllers[idMap->at(param.parentId)], param.name, numVehicles, param.jointType), param.publicId);
         }
         catch(const std::invalid_argument& e)
         {
@@ -195,7 +195,7 @@ private:
     {
         ros::Time startTime = ros::Time::now();
         if (modified) {
-            lsqSolver.reset(new LQPSolver(totalDof));
+            lsqSolver.reset(new LQPSolver(4*numVehicles));
             inputProvider->reset();
             modified = false;
         }
@@ -251,7 +251,7 @@ public:
         
         addVehicles(vehicles);
 
-        lsqSolver.reset(new LQPSolver(totalDof));
+        lsqSolver.reset(new LQPSolver(4*numVehicles));
         inputProvider.reset(new InputProvider(idMap));
 
         ROS_INFO("Constructed chain controller for %i vehicles", numVehicles);
@@ -333,8 +333,9 @@ public:
             }
             catch(const auto_print_error& e)
             {
-                pause();
+                stopThrusters();
                 rate.sleep();
+                continue;
             }
 
             {

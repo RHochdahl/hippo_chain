@@ -87,7 +87,7 @@ private:
 
 public:
     BaseVehicleController(const std::string& name)
-    : VehicleController(name)
+    : VehicleController(name, 0)
     , server(*nh)
     , f(boost::bind(&BaseVehicleController::updateControlParameters, this, _1, _2))
     {
@@ -126,7 +126,7 @@ public:
 
     void calcB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B) const
     {
-        B.push_back(std::make_pair(ID, thrusterModel.Psi));
+        B.push_back(std::make_pair(0, thrusterModel.Psi));
     }
 
     /**
@@ -137,7 +137,7 @@ public:
      */
     void calcOffDiagB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B, Eigen::Matrix<double, 6, 4>& X) const
     {
-        B.push_back(std::make_pair(ID, X));
+        B.push_back(std::make_pair(0, X));
     }
 
     Eigen::VectorXd calcEta() const

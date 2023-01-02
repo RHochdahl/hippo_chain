@@ -55,7 +55,7 @@ public:
     , lb(-1)
     , ub(1)
     , bb(true)
-    , r(CGAL::SMALLER)
+    , r(CGAL::EQUAL)
     {
         D[0] = Q.data();
         for (int i=1; i<SIZE; i++) {
@@ -81,10 +81,10 @@ public:
         assert(s.variable_values_end() == s.variable_values_begin() + SIZE);
 
         {
-            int j=0;
+            double* sol_it = solution.data();
             typename CGAL::Quadratic_program_solution<ET>::Variable_value_iterator it = s.variable_values_begin();
-            for (; it < s.variable_values_end(); ++it, ++j) {
-                solution(j) = it->numerator().to_double() / it->denominator().to_double();
+            for (; it < s.variable_values_end(); ++it, ++sol_it) {
+                *sol_it = it->numerator().to_double() / it->denominator().to_double();
             }
         }
 
