@@ -47,13 +47,14 @@ private:
 
 
 public:
-    ChildVehicleController(const std::shared_ptr<VehicleController> ptr, const std::string& name)
-    : VehicleController(name)
+    ChildVehicleController(const std::shared_ptr<VehicleController> ptr, const std::string& name, const int id)
+    : VehicleController(name, id)
     , parent(ptr)
     , jointModel(configProvider)
     , server(*nh)
     , f(boost::bind(&ChildVehicleController::updateControlParameters, this, _1, _2))
     {
+        assert(ID > 0);
         server.setCallback(f);
         ROS_INFO("Constructed child vehicle '%s'", name.c_str());
     }

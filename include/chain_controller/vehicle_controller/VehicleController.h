@@ -35,8 +35,8 @@ protected:
 
 
 public:
-    VehicleController(const std::string& name)
-    : ID(shared::getID(name))
+    VehicleController(const std::string& name, const int id)
+    : ID(id)
     , nh(new ros::NodeHandle(name))
     , pub(nh->advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 1))
     , configProvider(new ConfigProvider(nh))
