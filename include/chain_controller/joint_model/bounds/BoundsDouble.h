@@ -26,8 +26,7 @@ public:
         if (desPose > poseUpperLimit) {
             desPose = poseUpperLimit;
             inBounds = false;
-        }
-        if (desPose < poseLowerLimit) {
+        } else if (desPose < poseLowerLimit) {
             desPose = poseLowerLimit;
             inBounds = false;
         }
@@ -39,7 +38,7 @@ public:
 
         if (std::abs(desTwist) > twistLimit) {
             desTwist = shared::sgn(desTwist) * twistLimit;
-            inBounds = false;
+            return false;
         }
     
         return inBounds;

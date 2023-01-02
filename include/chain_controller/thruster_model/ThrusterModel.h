@@ -69,10 +69,13 @@ public:
 
     static inline std::array<double, 4> calcThrusterCommands(const Eigen::Vector4d& thrusterOutputs)
     {
+        const double* in_it = thrusterOutputs.data();
+        const double* end = in_it + 4;
+
         std::array<double, 4> thrusterCommands;
-        for (int idx=0; idx<thrusterCommands.size(); idx++) {
-            double thrusterOutput = thrusterOutputs(idx);
-            thrusterCommands[idx] = std::sqrt(std::abs(thrusterOutput)) * shared::sgn(thrusterOutput);
+        double* out_it = thrusterCommands.data();
+        for (; in_it!=end; in_it++, out_it++) {
+            *out_it = std::sqrt(std::abs(*in_it)) * shared::sgn(*in_it);
         }
         return thrusterCommands;
     }
