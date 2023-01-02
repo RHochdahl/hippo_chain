@@ -195,7 +195,7 @@ private:
     {
         ros::Time startTime = ros::Time::now();
         if (modified) {
-            lsqSolver.reset(new LQPSolver(totalDof));
+            lsqSolver.reset(new LQPSolver(4*numVehicles));
             inputProvider->reset();
             modified = false;
         }
@@ -251,7 +251,7 @@ public:
         
         addVehicles(vehicles);
 
-        lsqSolver.reset(new LQPSolver(totalDof));
+        lsqSolver.reset(new LQPSolver(4*numVehicles));
         inputProvider.reset(new InputProvider(idMap));
 
         ROS_INFO("Constructed chain controller for %i vehicles", numVehicles);
