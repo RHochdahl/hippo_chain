@@ -169,18 +169,19 @@ private:
         return true;
     }
 
-    void sendThrusterCommands(const Eigen::VectorXd& thrusterOutputs)
+    void sendThrusterCommands(const Eigen::Ref<const Eigen::VectorXd>& thrusterOutputs)
     {
-        int idx = 0;
-        for (auto it=vehicleControllers.begin(); it!=vehicleControllers.end(); it++, idx+=4) {
-            (*it)->publish(thrusterOutputs.block(idx, 0, 4, 1));
+        assert(4*numVehicles == thrusterOutputs.rows());
+        const double* data = thrusterOutputs.data();
+        for (auto it=vehicleControllers.begin(); it!=vehicleControllers.end(); it++, data+=4) {
+            (*it)->setThrusters(data);
         }
     }
 
     void stopThrusters()
     {
         for (auto it=vehicleControllers.begin(); it!=vehicleControllers.end(); it++) {
-            (*it)->publish(Eigen::Vector4d::Zero());
+            (*it)->stopThrusters();
         }
     }
 
@@ -350,7 +351,7 @@ public:
                 }
             }
 
-            nu = lsqSolver->solve(B, eta);
+            lsqSolver->solve(B, eta, nu);
             sendThrusterCommands(nu);
 
             rate.sleep();

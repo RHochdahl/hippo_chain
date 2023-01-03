@@ -19,7 +19,7 @@ public:
 class addition_error : public auto_print_error
 {
 public:
-    addition_error(const std::string& __arg) : auto_print_error(__arg) {}
+    addition_error(const std::string& __arg) : auto_print_error("Couldn't add vehicle! " + __arg) {}
 };
 
 class quaternion_error : public auto_print_error

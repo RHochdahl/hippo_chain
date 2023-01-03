@@ -67,15 +67,20 @@ public:
     ~ThrusterModel()
     {}
 
-    static inline std::array<double, 4> calcThrusterCommands(const Eigen::Vector4d& thrusterOutputs)
+    /**
+     * @brief publish thruster commands
+     * 
+     * @param output_it double pointer to first element of double array with size four
+     */
+    static inline std::array<double, 4> calcThrusterCommands(const double* output_it)
     {
-        const double* in_it = thrusterOutputs.data();
-        const double* end = in_it + 4;
+        const double* const end = output_it + 4;
 
         std::array<double, 4> thrusterCommands;
-        double* out_it = thrusterCommands.data();
-        for (; in_it!=end; in_it++, out_it++) {
-            *out_it = std::sqrt(std::abs(*in_it)) * shared::sgn(*in_it);
+        double* arr_it = thrusterCommands.data();
+        for (; output_it!=end; output_it++, arr_it++) {
+            assert(output_it != NULL);
+            *arr_it = std::sqrt(std::abs(*output_it)) * shared::sgn(*output_it);
         }
         return thrusterCommands;
     }

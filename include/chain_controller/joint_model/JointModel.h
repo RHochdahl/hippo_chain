@@ -46,12 +46,16 @@ public:
         if (!bounds->enforceBounds(desPose, desTwist)) ROS_WARN_THROTTLE(5.0, "Joint target out of bounds!");
     }
 
-    Eigen::Vector6d mapVelocity(const Eigen::Matrix<double, dof, 1>& velocity) const
+    template<typename Derived>
+    Eigen::Vector6d mapVelocity(const Eigen::MatrixBase<Derived>& velocity) const
     {
         return Phi * velocity;
     }
 
-    Eigen::Vector6d mapAcceleration(const Eigen::Matrix<double, dof, 1>& acceleration, const Eigen::Matrix<double, dof, 1>& velocity) const
+    template<typename Derived1,
+             typename Derived2>
+    Eigen::Vector6d mapAcceleration(const Eigen::MatrixBase<Derived1>& acceleration,
+                                    const Eigen::MatrixBase<Derived2>& velocity) const
     {
         return Phi * acceleration + Theta * velocity;
     }

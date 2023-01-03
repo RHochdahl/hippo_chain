@@ -24,6 +24,8 @@ public:
         const std::string nsExtension = "vehicle_model/";
         const std::string poseStr[] = {"x", "y", "z", "roll", "pitch", "yaw"};
 
+        // don't use iterators as performance is irrelevant here
+
         const double rigidMass = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_mass", 0);
         for (int i=0; i<3; i++) {
             inertias(i) = rigidMass + configProvider->getValuePositiveWithDefault(nsExtension + "added_mass/" + poseStr[i], 0);
@@ -44,22 +46,30 @@ public:
 
     }
 
-    Eigen::Vector6d calcWrenches(const Eigen::Vector6d& absVel, const Eigen::Vector6d& beta, const Eigen::Vector6d& dbeta) const
+    template<typename Derived1,
+             typename Derived2>
+    Eigen::Vector6d calcWrenches(const Eigen::MatrixBase<Derived1>& absVel,
+                                 const Eigen::Vector6d& beta,
+                                 const Eigen::MatrixBase<Derived2>& dbeta) const
     {
         // zero net buoyancy is assumed
 
-        const Eigen::Vector6d inertiaWrenches = inertias.cwiseProduct(dbeta);
+        Eigen::Vector6d result;
 
+        // coriolis wrenches
         const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
+        result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(momentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = beta.topRows<3>().cross(momentum.topRows<3>())
+                                            + beta.bottomRows<3>().cross(momentum.bottomRows<3>());
 
-        // coriolis and centrifugal wrenches
-        Eigen::Vector6d ccWrenches;
-        ccWrenches.topRows(3) = shared::cross3(beta.bottomRows(3), momentum.topRows(3));
-        ccWrenches.bottomRows(3) = shared::cross3(beta.topRows(3), momentum.topRows(3)) + shared::cross3(beta.bottomRows(3), momentum.bottomRows(3));
+        // inertial wrenches
+        result.noalias() += inertias.cwiseProduct(dbeta);
 
-        const Eigen::Vector6d dragWrenches = linDragCoeff.cwiseProduct(beta) + quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
+        // drag wrenches
+        result.noalias() += linDragCoeff.cwiseProduct(beta);
+        result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
 
-        return inertiaWrenches + ccWrenches + dragWrenches;
+        return result;
     }
 };
 

@@ -95,11 +95,11 @@ public:
 
         xiAbs = jointModel.transform(parent->getXiAbs()) + jointModel.xiRel;
 
-        const Eigen::Vector6d betaRel = jointModel.mapVelocity(controllerStates.sigma);
-        const Eigen::Vector6d betaRelDot = jointModel.mapAcceleration(controllerStates.sigmaDot, controllerStates.sigma);
         const Eigen::Vector6d betaTemp = jointModel.transform(parent->getBeta());
-        controllerStates.beta = betaTemp + betaRel;
-        controllerStates.betaDot = jointModel.transform(parent->getBetaDot()) + betaRelDot + shared::cross6(betaTemp, jointModel.xiRel);
+        controllerStates.beta = jointModel.mapVelocity(controllerStates.sigma) + betaTemp;
+        controllerStates.betaDot = jointModel.transform(parent->getBetaDot())
+                                 + jointModel.mapAcceleration(controllerStates.sigmaDot, controllerStates.sigma)
+                                 + shared::cross6(betaTemp, jointModel.xiRel);
 
         tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot);
     }

@@ -50,38 +50,37 @@ private:
         controllerStates.desiredPose = desiredState->getPose<Eigen::Vector7d>();
         controllerStates.desiredTwist = desiredState->getTwist<Eigen::Vector6d>();
 
-        if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows(4))) throw quaternion_error();
-        if (!shared::isUnitQuaternion(poseAbs.bottomRows(4))) throw quaternion_error();
+        if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows<4>())) throw quaternion_error();
+        if (!shared::isUnitQuaternion(poseAbs.bottomRows<4>())) throw quaternion_error();
 
         const double rQuatDes = controllerStates.desiredPose[3];
-        const Eigen::Vector3d iQuatDes = controllerStates.desiredPose.bottomRows(3);
+        const Eigen::Vector3d iQuatDes = controllerStates.desiredPose.bottomRows<3>();
         const double rQuatAct = poseAbs[3];
-        const Eigen::Vector3d iQuatAct = poseAbs.bottomRows(3);
+        const Eigen::Vector3d iQuatAct = poseAbs.bottomRows<3>();
 
         // rotation matrix R^1_0 or S_K'K to rotate vector from world to base frame
         const Eigen::Matrix3d R_1_0 = Eigen::Quaterniond(poseAbs[3], -poseAbs[4], -poseAbs[5], -poseAbs[6]).toRotationMatrix();
 
-        const Eigen::Vector3d posErr = R_1_0 * (controllerStates.desiredPose.topRows(3) - poseAbs.topRows(3));
+        const Eigen::Vector3d posErr = R_1_0 * (controllerStates.desiredPose.topRows<3>() - poseAbs.topRows<3>());
         const double etaErr = rQuatAct*rQuatDes + iQuatAct.dot(iQuatDes);
-        const Eigen::Vector3d epsilonErr = (etaErr > 0) ? (rQuatAct * iQuatDes - rQuatDes * iQuatAct + shared::cross3(iQuatDes, iQuatAct))
-                                                        : (rQuatDes * iQuatAct - rQuatAct * iQuatDes + shared::cross3(iQuatAct, iQuatDes));
+        const Eigen::Vector3d epsilonErr = shared::sgn(etaErr) * (rQuatAct * iQuatDes - rQuatDes * iQuatAct + iQuatDes.cross(iQuatAct));
 
-        const Eigen::Vector3d xiLinDes = R_1_0 * controllerStates.desiredTwist.topRows(3);
-        const Eigen::Vector3d xiAngDes = R_1_0 * controllerStates.desiredTwist.bottomRows(3);
+        const Eigen::Vector3d xiLinDes = R_1_0 * controllerStates.desiredTwist.topRows<3>();
+        const Eigen::Vector3d xiAngDes = R_1_0 * controllerStates.desiredTwist.bottomRows<3>();
 
-        controllerStates.sigma.topRows(3) = xiLinDes + param.kSigma1 * posErr;
-        controllerStates.sigma.bottomRows(3) = xiAngDes + param.kSigma2 * epsilonErr;
+        controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * posErr;
+        controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
 
         // Assumption: des twist in world frame, actual twist in base frame
-        const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows(3);
-        const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows(3);
-        const Eigen::Vector3d epsilonErrDot = 0.5 * (etaErr*omegaErr + shared::cross3(epsilonErr, omegaErr));
+        const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
+        const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows<3>();
+        const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(omegaErr);   // _2 because the factor 0.5 is applied later
 
-        const Eigen::Vector3d xiLinDesDot = shared::cross3(xiLinDes, xiAbs.bottomRows(3));
-        const Eigen::Vector3d xiAngDesDot = shared::cross3(xiAngDes, xiAbs.bottomRows(3));
+        const Eigen::Vector3d xiLinDesDot = xiLinDes.cross(xiAbs.bottomRows<3>());
+        const Eigen::Vector3d xiAngDesDot = xiAngDes.cross(xiAbs.bottomRows<3>());
 
-        controllerStates.sigmaDot.topRows(3) = xiLinDesDot + param.kSigma1 * posErrDot;
-        controllerStates.sigmaDot.bottomRows(3) = xiAngDesDot + param.kSigma2 * epsilonErrDot;
+        controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
+        controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * param.kSigma2 * epsilonErrDot_2;
     }
 
 

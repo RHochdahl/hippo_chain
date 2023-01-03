@@ -20,20 +20,11 @@ namespace shared
         return (std::abs(quat.norm() - 1.0) < 1e-12);
     }
 
-    static inline Eigen::Vector3d cross3(const Eigen::Vector3d& first, const Eigen::Vector3d& second)
-    {
-        Eigen::Vector3d res;
-        res(0) = first(1) * second(2) - first(2) * second(1);
-        res(1) = first(2) * second(0) - first(0) * second(2);
-        res(2) = first(0) * second(1) - first(1) * second(0);
-        return res;
-    }
-
     static inline Eigen::Vector6d cross6(const Eigen::Vector6d& first, const Eigen::Vector6d& second)
     {
         Eigen::Vector6d res;
-        res.topRows(3) = cross3(first.bottomRows(3), second.topRows(3)) + cross3(first.topRows(3), second.bottomRows(3));
-        res.bottomRows(3) = cross3(first.bottomRows(3), second.bottomRows(3));
+        res.topRows<3>() = first.bottomRows<3>().cross(second.topRows<3>()) + first.topRows<3>().cross(second.bottomRows<3>());
+        res.bottomRows<3>() = first.bottomRows<3>().cross(second.bottomRows<3>());
         return res;
     }
 

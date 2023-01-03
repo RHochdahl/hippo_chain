@@ -69,26 +69,27 @@ public:
         delete[] D;
     }
 
-    const Eigen::VectorXd& solve(const Eigen::MatrixXd& B, const Eigen::VectorXd& eta)
+    void solve(const Eigen::Ref<const Eigen::MatrixXd>& B,
+               const Eigen::Ref<const Eigen::VectorXd>& eta,
+               Eigen::Ref<Eigen::VectorXd> nu)
     {
         assert(B.rows() == eta.rows());
         assert(B.cols() == SIZE);
+        assert(nu.rows() == SIZE);
 
-        Q = B.transpose() * B;
-        q = -B.transpose() * eta;
+        Q.noalias() = B.transpose() * B;
+        q.noalias() = -B.transpose() * eta;
 
         s = CGAL::solve_quadratic_program(CGAL::make_quadratic_program_from_iterators(SIZE, 0, A, b, r, bb, lb, bb, ub, D, c), ET());
         assert(s.variable_values_end() == s.variable_values_begin() + SIZE);
 
         {
-            double* sol_it = solution.data();
+            double* sol_it = nu.data();
             typename CGAL::Quadratic_program_solution<ET>::Variable_value_iterator it = s.variable_values_begin();
-            for (; it < s.variable_values_end(); ++it, ++sol_it) {
+            for (; it != s.variable_values_end(); ++it, ++sol_it) {
                 *sol_it = it->numerator().to_double() / it->denominator().to_double();
             }
         }
-
-        return solution;
     }
 };
 

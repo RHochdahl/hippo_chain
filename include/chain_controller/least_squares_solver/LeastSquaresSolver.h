@@ -9,15 +9,14 @@ class LeastSquaresSolver
 {
 public:
     const int SIZE;
-protected:
-    Eigen::VectorXd solution;
 public:
     LeastSquaresSolver(const int size)
     : SIZE(size)
-    , solution(Eigen::VectorXd::Zero(SIZE))
     {}
 
-    virtual const Eigen::VectorXd& solve(const Eigen::MatrixXd& B, const Eigen::VectorXd& eta) = 0;
+    virtual void solve(const Eigen::Ref<const Eigen::MatrixXd>& B,
+                       const Eigen::Ref<const Eigen::VectorXd>& eta,
+                       Eigen::Ref<Eigen::VectorXd> nu) = 0;
 };
 
 

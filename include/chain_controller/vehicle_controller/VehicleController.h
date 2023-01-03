@@ -47,7 +47,7 @@ public:
     ~VehicleController()
     {
         if (ros::ok()) {
-            publish(Eigen::Vector4d::Zero());
+            stopThrusters();
         }
     }
 
@@ -58,9 +58,10 @@ public:
      * @param id 
      * @param jointWrench 
      */
-    void setJointWrenches(const Eigen::Vector6d& jointWrench)
+    template<typename Derived>
+    void setJointWrenches(const Eigen::MatrixBase<Derived>& jointWrench)
     {
-        tau += jointWrench;
+        tau.noalias() += jointWrench;
     }
 
     const Eigen::Vector6d& getXiAbs() const
@@ -68,7 +69,28 @@ public:
         return xiAbs;
     }
 
-    void publish(const Eigen::Vector4d& thrusterOutputs) const
+    /**
+     * @brief publish thruster commands
+     * 
+     * @param thrusterOutputs double pointer to first element of double array with size four
+     */
+    void stopThrusters() const
+    {
+        mavros_msgs::AttitudeTarget msg;
+        msg.header.stamp = ros::Time::now();     
+        msg.body_rate.x = 0;
+        msg.body_rate.y = 0;
+        msg.body_rate.z = 0;
+        msg.thrust      = 0;
+        pub.publish(msg);
+    }
+
+    /**
+     * @brief publish thruster commands
+     * 
+     * @param thrusterOutputs double pointer to first element of double array with size four
+     */
+    void setThrusters(const double* thrusterOutputs) const
     {
         mavros_msgs::AttitudeTarget msg;
         msg.header.stamp = ros::Time::now();
