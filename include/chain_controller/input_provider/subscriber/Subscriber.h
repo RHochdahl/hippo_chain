@@ -45,7 +45,7 @@ public:
 
     const std::shared_ptr<StateProvider> getState(const int controllerId)
     {
-        assert(id < state.size());
+        assert(controllerId < state.size());
         updated = false;
         return state[controllerId];
     }
