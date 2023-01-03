@@ -106,7 +106,7 @@ public:
 
     Eigen::VectorXd calcEta() const
     {
-        parent->setJointWrenches(jointModel.inverseTransform(tau));
+        parent->setJointWrenches(jointModel.transposedTransform(tau));
         const typename JointModel::JointVector s = controllerStates.sigma - jointModel.zeta;
         if constexpr (std::is_same<typename JointModel::JointVector, double>::value)
             return Eigen::Vector1d(jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(std::abs(s), param.lim));
@@ -123,7 +123,7 @@ public:
     void calcOffDiagB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B, Eigen::Matrix<double, 6, 4>& X) const
     {
         B.push_back(std::make_pair(ID, jointModel.Phi.transpose() * X));
-        X = jointModel.inverseTransform(X);
+        X = jointModel.transposedTransform(X);
         parent->calcOffDiagB(B, X);
     }
 
@@ -131,7 +131,7 @@ public:
     void calcB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B) const
     {
         B.push_back(std::make_pair(ID, jointModel.Phi.transpose() * thrusterModel.Psi));
-        Eigen::Matrix<double, 6, 4> X = jointModel.inverseTransform(thrusterModel.Psi);
+        Eigen::Matrix<double, 6, 4> X = jointModel.transposedTransform(thrusterModel.Psi);
         parent->calcOffDiagB(B, X);
     }
 

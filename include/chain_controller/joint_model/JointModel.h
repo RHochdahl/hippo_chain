@@ -67,7 +67,7 @@ public:
     }
 
     template<typename T>
-    T inverseTransform(const T& input) const
+    T transposedTransform(const T& input) const
     {
         return A.transpose() * input;
     }
