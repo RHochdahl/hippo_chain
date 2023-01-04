@@ -47,27 +47,27 @@ public:
     }
 
     template<typename Derived>
-    Eigen::Vector6d mapVelocity(const Eigen::MatrixBase<Derived>& velocity) const
+    auto mapVelocity(const Eigen::MatrixBase<Derived>& velocity) const
     {
         return Phi * velocity;
     }
 
     template<typename Derived1,
              typename Derived2>
-    Eigen::Vector6d mapAcceleration(const Eigen::MatrixBase<Derived1>& acceleration,
-                                    const Eigen::MatrixBase<Derived2>& velocity) const
+    auto mapAcceleration(const Eigen::MatrixBase<Derived1>& acceleration,
+                         const Eigen::MatrixBase<Derived2>& velocity) const
     {
         return Phi * acceleration + Theta * velocity;
     }
 
-    template<typename T>
-    T transform(const T& input) const
+    template<typename Derived>
+    auto transform(const Eigen::MatrixBase<Derived>& input) const
     {
         return A * input;
     }
 
-    template<typename T>
-    T transposedTransform(const T& input) const
+    template<typename Derived>
+    auto transposedTransform(const Eigen::MatrixBase<Derived>& input) const
     {
         return A.transpose() * input;
     }

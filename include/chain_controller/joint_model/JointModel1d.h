@@ -14,6 +14,12 @@ protected:
     virtual void calcTheta() = 0;
 
 public:
+    // must be above update()
+    auto mapVelocity(const double velocity) const
+    {
+        return Phi * velocity;
+    }
+
     void update(const std::shared_ptr<StateProvider> newState)
     {
         theta = newState->getPose<JointVector>();
@@ -23,29 +29,15 @@ public:
         if (!bounds->checkBounds(theta, zeta)) ROS_WARN_THROTTLE(5.0, "Joint out of bounds!");
     }
 
-    Eigen::Vector6d mapVelocity(const double velocity) const
-    {
-        return Phi * velocity;
-    }
 
-    Eigen::Vector6d mapAcceleration(const double acceleration) const
+    auto mapAcceleration(const double acceleration) const
     {
         return Phi * acceleration;
     }
 
-    Eigen::Vector6d mapAcceleration(const double acceleration, const double velocity) const
+    auto mapAcceleration(const double acceleration, const double velocity) const
     {
         return mapAcceleration(acceleration);
-    }
-
-    Eigen::Vector6d mapAcceleration(const Eigen::Matrix<double, 1, 1>& acceleration) const
-    {
-        return mapAcceleration(0);
-    }
-
-    Eigen::Vector6d mapAcceleration(const Eigen::Matrix<double, 1, 1>& acceleration, const Eigen::Matrix<double, 1, 1>& velocity) const
-    {
-        return mapAcceleration(acceleration(0));
     }
 };
 
