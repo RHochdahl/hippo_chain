@@ -104,14 +104,15 @@ public:
         tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot);
     }
 
-    Eigen::VectorXd calcEta() const
+    void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) const
     {
         parent->setJointWrenches(jointModel.transposedTransform(tau));
         const typename JointModel::JointVector s = controllerStates.sigma - jointModel.zeta;
-        if constexpr (std::is_same<typename JointModel::JointVector, double>::value)
-            return Eigen::Vector1d(jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(std::abs(s), param.lim));
-        else
-            return jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+        if constexpr (std::is_same<typename JointModel::JointVector, double>::value) {
+            eta(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(std::abs(s), param.lim);
+        } else {
+            eta.middleRows<JointModel::DOF>(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+        }
     }
 
     /**
@@ -120,19 +121,23 @@ public:
      * @param B 
      * @param X 
      */
-    void calcOffDiagB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B, Eigen::Matrix<double, 6, 4>& X) const
+    void calcOffDiagB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
+                      Eigen::Matrix<double, 6, 4>& X,
+                      const std::vector<int>& idxList) const
     {
-        B.push_back(std::make_pair(ID, jointModel.Phi.transpose() * X));
-        X = jointModel.transposedTransform(X);
-        parent->calcOffDiagB(B, X);
+        B.middleRows<JointModel::DOF>(idxList[ID]) = jointModel.Phi.transpose() * X;
+        X = jointModel.transposedTransform(X).eval();
+        parent->calcOffDiagB(B, X, idxList);
     }
 
     // first step of calculating B recursively
-    void calcB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B) const
+    void calcB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
+               const std::vector<int>& idxList) const
     {
-        B.push_back(std::make_pair(ID, jointModel.Phi.transpose() * thrusterModel.Psi));
+        assert(idxList.size() >= ID);
+        B.middleRows<JointModel::DOF>(idxList[ID]) = jointModel.Phi.transpose() * thrusterModel.Psi;
         Eigen::Matrix<double, 6, 4> X = jointModel.transposedTransform(thrusterModel.Psi);
-        parent->calcOffDiagB(B, X);
+        parent->calcOffDiagB(B, X, idxList);
     }
 
     uint getDof() const

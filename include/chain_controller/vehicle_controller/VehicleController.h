@@ -111,12 +111,11 @@ public:
 
     virtual void calcDecoupledWrenches(const std::shared_ptr<StateProvider> desiredState) = 0;
 
-    virtual Eigen::VectorXd calcEta() const = 0;
+    virtual void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) const = 0;
 
     // first step of calculating B recursively
-    virtual void calcB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B) const = 0;
-
-    virtual uint getDof() const = 0;
+    virtual void calcB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
+                       const std::vector<int>& idxList) const = 0;
 
     virtual const Eigen::Vector6d& getBeta() const = 0;
     virtual const Eigen::Vector6d& getBetaDot() const = 0;
@@ -127,7 +126,11 @@ public:
      * @param B 
      * @param X 
      */
-    virtual void calcOffDiagB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B, Eigen::Matrix<double, 6, 4>& X) const = 0;
+    virtual void calcOffDiagB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
+                              Eigen::Matrix<double, 6, 4>& X,
+                              const std::vector<int>& idxList) const = 0;
+
+    virtual uint getDof() const = 0;
 };
 
 

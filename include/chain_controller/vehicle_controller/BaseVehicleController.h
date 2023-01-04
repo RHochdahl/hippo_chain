@@ -123,9 +123,10 @@ public:
         tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot);
     }
 
-    void calcB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B) const
+    void calcB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
+               const std::vector<int>& idxList) const
     {
-        B.push_back(std::make_pair(0, thrusterModel.Psi));
+       B.topRows<6>() = thrusterModel.Psi;
     }
 
     /**
@@ -134,15 +135,17 @@ public:
      * @param B 
      * @param X 
      */
-    void calcOffDiagB(std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>>& B, Eigen::Matrix<double, 6, 4>& X) const
+    void calcOffDiagB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
+                      Eigen::Matrix<double, 6, 4>& X,
+                      const std::vector<int>& idxList) const
     {
-        B.push_back(std::make_pair(0, X));
+        B.topRows<6>() = X;
     }
 
-    Eigen::VectorXd calcEta() const
+    void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) const
     {
         const Eigen::Vector6d s = controllerStates.sigma - xiAbs;
-        return tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+        eta.topRows<6>() = tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
     }
 
     const Eigen::Vector6d& getBeta() const

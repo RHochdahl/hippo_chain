@@ -323,16 +323,12 @@ public:
             try
             {
                 int id = 0;
-                std::vector<std::pair<uint, Eigen::Matrix<double, Eigen::Dynamic, 4>>> Bpart;
-                for (auto it=vehicleControllers.begin(); it!=vehicleControllers.end(); it++, id++) {
+                auto it=vehicleControllers.begin();
+                for (; it!=vehicleControllers.end(); it++, id++) {
                     (*it)->updateVehicleState(inputProvider->getState(id));
                     (*it)->calcDecoupledWrenches(inputProvider->getTarget(id));
 
-                    (*it)->calcB(Bpart);
-                    for (auto it=Bpart.begin(); it!=Bpart.end(); it++) {
-                        B.block(startIdxList[it->first], 4*id, dofList[it->first], 4) = it->second;
-                    }
-                    Bpart.clear();
+                    (*it)->calcB(B.middleCols<4>(4*id), startIdxList);
                 }
             }
             catch(const auto_print_error& e)
@@ -344,10 +340,9 @@ public:
 
             {
                 auto idxIt = startIdxList.rbegin();
-                auto dofIt = dofList.rbegin();
                 auto vehiclesIt = vehicleControllers.rbegin();
-                for (; vehiclesIt!=vehicleControllers.rend(); idxIt++, dofIt++, vehiclesIt++) {
-                    eta.block(*idxIt, 0, *dofIt, 1) = (*vehiclesIt)->calcEta();
+                for (; vehiclesIt!=vehicleControllers.rend(); idxIt++, vehiclesIt++) {
+                    (*vehiclesIt)->calcEta(eta, *idxIt);
                 }
             }
 
