@@ -2,9 +2,9 @@
 #define JOINTMODEL_H
 
 
-#include "../../utils/typedefs.h"
-#include "../../utils/ConfigProvider.h"
-#include "../state/StateProvider.h"
+#include <hippo_chain/include/utils/typedefs.h>
+#include <hippo_chain/include/utils/ConfigProvider.h>
+#include <hippo_chain/include/chain_controller/state/StateProvider.h>
 #include "bounds/Bounds.h"
 
 

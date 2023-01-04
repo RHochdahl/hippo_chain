@@ -2,9 +2,9 @@
 #define THRUSTERMODEL_H
 
 
-#include "../../utils/typedefs.h"
-#include "../../utils/sharedAlgorithms.hpp"
-#include "../../utils/ConfigProvider.h"
+#include <hippo_chain/include/utils/typedefs.h>
+#include <hippo_chain/include/utils/ConfigProvider.h>
+#include <hippo_chain/include/utils/sharedAlgorithms.hpp>
 #include <string>
 #include <array>
 

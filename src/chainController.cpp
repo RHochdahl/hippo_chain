@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include "../include/chain_controller/ChainController.h"
+#include <hippo_chain/include/chain_controller/ChainController.h>
 #include <boost/program_options.hpp>
 
 

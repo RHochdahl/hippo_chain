@@ -4,7 +4,7 @@
 
 #include <memory>
 #include "ChildVehicleController.h"
-#include "../joint_model/RevoluteJointModel.h"
+#include <hippo_chain/include/chain_controller/joint_model/RevoluteJointModel.h>
 
 
 namespace ChildFactory

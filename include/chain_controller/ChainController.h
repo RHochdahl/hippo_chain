@@ -9,14 +9,14 @@
 #include <std_srvs/Empty.h>
 #include <hippo_chain/ChainControllerConfig.h>
 
-#include "input_provider/InputProvider.h"
-#include "least_squares_solver/LeastSquaresSolver.h"
-#include "least_squares_solver/LQPSolver.h"
-#include "vehicle_controller/VehicleController.h"
-#include "vehicle_controller/BaseVehicleController.h"
-#include "vehicle_controller/ChildVehicleController.h"
-#include "vehicle_controller/ChildFactory.hpp"
-#include "../utils/ConfigProvider.h"
+#include <hippo_chain/include/utils/ConfigProvider.h>
+#include <hippo_chain/include/chain_controller/input_provider/InputProvider.h>
+#include <hippo_chain/include/chain_controller/least_squares_solver/LeastSquaresSolver.h>
+#include <hippo_chain/include/chain_controller/least_squares_solver/LQPSolver.h>
+#include <hippo_chain/include/chain_controller/vehicle_controller/VehicleController.h>
+#include <hippo_chain/include/chain_controller/vehicle_controller/BaseVehicleController.h>
+#include <hippo_chain/include/chain_controller/vehicle_controller/ChildVehicleController.h>
+#include <hippo_chain/include/chain_controller/vehicle_controller/ChildFactory.hpp>
 
 
 class ChainController
