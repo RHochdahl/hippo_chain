@@ -19,7 +19,7 @@ protected:
 public:
     InputProvider(const std::shared_ptr<std::map<int, int>> idMap)
     : idMap(idMap)
-    , nh("ChainController")
+    , nh("chain")
     , stateSub(nh, idMap)
     , targetSub(nh, idMap)
     {}

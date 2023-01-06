@@ -85,7 +85,7 @@ include_directories(
 ## Generate messages in the 'msg' folder
 file(GLOB_RECURSE MSG_FILES
   RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/msg"
-  "*.msg"
+  "${CMAKE_CURRENT_SOURCE_DIR}/msg/*.msg"
 )
 
 if(MSG_FILES)
@@ -98,7 +98,7 @@ endif()
 ## Generate services in the 'srv' folder
 file(GLOB_RECURSE SRV_FILES
   RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/srv"
-  "*.srv"
+  "${CMAKE_CURRENT_SOURCE_DIR}/srv/*.srv"
 )
 
 if(SRV_FILES)
@@ -169,13 +169,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
-# include
-# ${catkin_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/
-  ${catkin_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/..
-)
+# include_directories(
+#   include
+#   ${catkin_INCLUDE_DIRS}
+#   ${CMAKE_CURRENT_SOURCE_DIR}/src/
+#   ${catkin_INCLUDE_DIRS}
+#   ${CMAKE_CURRENT_SOURCE_DIR}/..
+# )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -208,6 +208,8 @@ include_directories(
 # )
 
 file(GLOB_RECURSE SRC_FILES
+  LIST_DIRECTORIES TRUE
+  RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 )
 
@@ -215,11 +217,12 @@ file(GLOB_RECURSE SRC_FILES
 # 	"${CMAKE_CURRENT_SOURCE_DIR}/test/*.cpp"
 # )
 
-if (SRC_FILES)
-  add_executable(${PROJECT_NAME}_node ${SRC_FILES})
-  add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-  target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES})
-endif()
+foreach(SRC_FILE ${SRC_FILES})
+  string(REPLACE ".cpp" "" NODE_NAME ${SRC_FILE})
+  add_executable(${PROJECT_NAME}_${NODE_NAME}_node ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_FILE})
+  add_dependencies(${PROJECT_NAME}_${NODE_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+  target_link_libraries(${PROJECT_NAME}_${NODE_NAME}_node ${catkin_LIBRARIES})
+endforeach(SRC_FILE ${SRC_FILES})
 
 if (TEST_FILES)
 	add_executable(${PROJECT_NAME}_test ${TEST_FILES})
@@ -283,11 +286,12 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/launch)
   )
 endif()
 
-if (SRC_FILES)
-  install(TARGETS ${PROJECT_NAME}_node
+foreach(SRC_FILE ${SRC_FILES})
+  string(REPLACE ".cpp" "" NODE_NAME ${SRC_FILE})
+  install(TARGETS ${PROJECT_NAME}_${NODE_NAME}_node
     RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
-endif()
+endforeach(SRC_FILE ${SRC_FILES})
 
 if (TEST_FILES)
   install(TARGETS ${PROJECT_NAME}_test
