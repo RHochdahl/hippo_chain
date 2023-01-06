@@ -6,8 +6,8 @@
 
     <arg name="dist" value="0.0481" />
 
-    <param                          name="max_force"    value="1"                       type="double" />
-    <param                          name="max_torque"   value="1"                       type="double" />
+    <param                          name="max_force"    value="0.0088"                  type="double" />
+    <param                          name="max_torque"   value="0.0002112"               type="double" />
     <param                          name="clockwise"    value="$(arg clockwise)"        type="bool"   />
     <param if="$(arg is_left)"      name="pos_y"        value="$(arg dist)"             type="double" />
     <param unless="$(arg is_left)"  name="pos_y"        value="$(eval -arg('dist'))"    type="double" />
