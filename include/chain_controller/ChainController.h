@@ -9,7 +9,7 @@
 #include <std_srvs/Empty.h>
 #include <hippo_chain/ChainControllerConfig.h>
 
-#include <hippo_chain/include/utils/ConfigProvider.h>
+#include <hippo_chain/include/common/ConfigProvider.h>
 #include <hippo_chain/include/chain_controller/input_provider/InputProvider.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LeastSquaresSolver.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LQPSolver.h>

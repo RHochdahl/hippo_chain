@@ -9,8 +9,8 @@
 #include <dynamic_reconfigure/server.h>
 
 #include "../vehicle_model/VehicleModel.h"
-#include "../../utils/typedefs.h"
-#include "../../utils/sharedAlgorithms.hpp"
+#include "../../common/typedefs.h"
+#include "../../common/sharedAlgorithms.hpp"
 #include "../state/StateProvider.h"
 #include "../thruster_model/ThrusterModel.h"
 #include <mavros_msgs/AttitudeTarget.h>

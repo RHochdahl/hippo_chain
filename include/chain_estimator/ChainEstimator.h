@@ -9,7 +9,7 @@
 #include <hippo_chain/AddVehicles.h>
 #include <hippo_chain/ChainState.h>
 
-#include <hippo_chain/include/utils/ConfigProvider.h>
+#include <hippo_chain/include/common/ConfigProvider.h>
 #include <hippo_chain/include/chain_estimator/vehicle_estimator/VehicleEstimator.h>
 #include <hippo_chain/include/chain_estimator/vehicle_estimator/BaseVehicleEstimator.h>
 #include <hippo_chain/include/chain_estimator/vehicle_estimator/ChildVehicleEstimator.h>

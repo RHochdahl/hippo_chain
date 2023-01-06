@@ -4,11 +4,11 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
-#include <hippo_chain/include/utils/ConfigProvider.h>
-#include <hippo_chain/include/utils/typedefs.h>
-#include <hippo_chain/include/utils/sharedAlgorithms.hpp>
+#include <hippo_chain/include/common/ConfigProvider.h>
+#include <hippo_chain/include/common/typedefs.h>
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
 #include <hippo_chain/ChainVehicleState.h>
-#include <hippo_chain/include/utils/CustomExceptions.h>
+#include <hippo_chain/include/common/CustomExceptions.h>
 
 
 class VehicleEstimator

@@ -3,7 +3,7 @@
 
 
 #include "Bounds.h"
-#include "../../../utils/sharedAlgorithms.hpp"
+#include "../../../common/sharedAlgorithms.hpp"
 
 
 template<std::size_t SIZE>

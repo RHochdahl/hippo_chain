@@ -4,7 +4,7 @@
 
 #include "JointModel.h"
 #include <string>
-#include <hippo_chain/include/utils/sharedAlgorithms.hpp>
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
 
 
 /**

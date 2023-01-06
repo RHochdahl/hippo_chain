@@ -28,5 +28,11 @@ public:
     quaternion_error() : auto_print_error("Quaternion is not unit quaternion!") {}
 };
 
+class timeout_error : public auto_print_error
+{
+public:
+    timeout_error(const std::string& __arg) : auto_print_error(__arg + " timed out!") {}
+};
+
 
 #endif  // CUSTOMEXCEPTIONS_H

@@ -4,7 +4,6 @@
 
 #include <memory>
 #include "VehicleController.h"
-#include <hippo_chain/include/chain_controller/joint_model/JointModel.h>
 #include <hippo_chain/ChildControllerConfig.h>
 
 

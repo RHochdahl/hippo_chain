@@ -2,8 +2,8 @@
 #define JOINTMODEL_H
 
 
-#include <hippo_chain/include/utils/typedefs.h>
-#include <hippo_chain/include/utils/ConfigProvider.h>
+#include <hippo_chain/include/common/typedefs.h>
+#include <hippo_chain/include/common/ConfigProvider.h>
 #include <geometry_msgs/PoseWithCovariance.h>
 #include <geometry_msgs/TwistWithCovariance.h>
 
