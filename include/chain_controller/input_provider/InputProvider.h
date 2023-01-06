@@ -4,7 +4,7 @@
 
 #include <utility>
 #include <ros/ros.h>
-#include "../state/StateProvider.h"
+#include <hippo_chain/include/chain_controller/state/StateProvider.h>
 #include "subscriber/StateSubscriber.h"
 #include "subscriber/TargetSubscriber.h"
 

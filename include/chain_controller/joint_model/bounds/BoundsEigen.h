@@ -3,7 +3,7 @@
 
 
 #include "Bounds.h"
-#include "../../../common/sharedAlgorithms.hpp"
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
 
 
 template<std::size_t SIZE>

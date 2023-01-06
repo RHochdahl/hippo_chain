@@ -8,11 +8,11 @@
 
 #include <dynamic_reconfigure/server.h>
 
-#include "../vehicle_model/VehicleModel.h"
-#include "../../common/typedefs.h"
-#include "../../common/sharedAlgorithms.hpp"
-#include "../state/StateProvider.h"
-#include "../thruster_model/ThrusterModel.h"
+#include <hippo_chain/include/chain_controller/vehicle_model/VehicleModel.h>
+#include <hippo_chain/include/chain_controller/state/StateProvider.h>
+#include <hippo_chain/include/chain_controller/thruster_model/ThrusterModel.h>
+#include <hippo_chain/include/common/typedefs.h>
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
 #include <mavros_msgs/AttitudeTarget.h>
 
 

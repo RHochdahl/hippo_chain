@@ -5,9 +5,9 @@
 #include <memory>
 #include <math.h>
 #include <Eigen/Dense>
-#include "../../common/typedefs.h"
-#include "../../common/sharedAlgorithms.hpp"
-#include "../../common/ConfigProvider.h"
+#include <hippo_chain/include/common/typedefs.h>
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
+#include <hippo_chain/include/common/ConfigProvider.h>
 
 
 class VehicleModel

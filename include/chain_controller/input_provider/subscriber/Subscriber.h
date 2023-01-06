@@ -4,7 +4,7 @@
 
 #include <ros/ros.h>
 #include <memory>
-#include "../../state/StateProvider.h"
+#include <hippo_chain/include/chain_controller/state/StateProvider.h>
 
 
 template<typename T>
