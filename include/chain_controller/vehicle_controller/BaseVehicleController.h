@@ -32,11 +32,13 @@ private:
 
     void updateControlParameters(hippo_chain::BaseControllerConfig &config, uint32_t level)
     {
+        if (!config.update) return;
         param.kSigma1 = config.kSigma1;
         param.kSigma2 = config.kSigma2;
         param.kP = config.kP;
         param.kSat = config.kSat;
         param.lim = config.lim;
+        config.update = false;
         ROS_INFO("Updated controller parameters for '%s'", nh->getNamespace().c_str());
     }
 
@@ -87,7 +89,7 @@ private:
 public:
     BaseVehicleController(const std::string& name)
     : VehicleController(name, 0)
-    , server(*nh)
+    , server(ros::NodeHandle("BaseController"))
     , f(boost::bind(&BaseVehicleController::updateControlParameters, this, _1, _2))
     {
         server.setCallback(f);

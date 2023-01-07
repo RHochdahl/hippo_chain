@@ -5,6 +5,7 @@
 #include <memory>
 #include "VehicleController.h"
 #include <hippo_chain/ChildControllerConfig.h>
+#include <hippo_chain/include/common/DynamicReconfigureManager.h>
 
 
 template<typename JointModel>
@@ -31,11 +32,13 @@ private:
         typename JointModel::JointVector sigmaDot;
     } controllerStates;
 
-    dynamic_reconfigure::Server<hippo_chain::ChildControllerConfig> server;
-    dynamic_reconfigure::Server<hippo_chain::ChildControllerConfig>::CallbackType f;
+    typedef boost::function<void(const hippo_chain::ChildControllerConfig &, uint32_t)> CallbackType;
+    CallbackType f;
+
+    static inline std::unique_ptr<DynamicReconfigureManager<hippo_chain::ChildControllerConfig>> dynamicReconfigureManager;
 
 
-    void updateControlParameters(hippo_chain::ChildControllerConfig &config, uint32_t level)
+    void updateControlParameters(const hippo_chain::ChildControllerConfig& config, uint32_t level)
     {
         param.kSigma = config.kSigma;
         param.kP = config.kP;
@@ -50,16 +53,18 @@ public:
     : VehicleController(name, id)
     , parent(ptr)
     , jointModel(configProvider)
-    , server(*nh)
     , f(boost::bind(&ChildVehicleController::updateControlParameters, this, _1, _2))
     {
         assert(ID > 0);
-        server.setCallback(f);
+        if (!dynamicReconfigureManager) dynamicReconfigureManager.reset(new DynamicReconfigureManager<hippo_chain::ChildControllerConfig>("ChildControllers"));
+        dynamicReconfigureManager->registerCallback(f, this);
         ROS_INFO("Constructed child vehicle '%s'", name.c_str());
     }
 
     ~ChildVehicleController()
-    {}
+    {
+        dynamicReconfigureManager->removeCallback(this);
+    }
 
     /**
      * @brief update Phi, Theta, A, theta, zeta
