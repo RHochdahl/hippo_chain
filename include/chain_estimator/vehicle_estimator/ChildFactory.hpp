@@ -9,14 +9,14 @@
 
 namespace ChildFactory
 {
-    std::shared_ptr<VehicleEstimator> bearChild(const std::shared_ptr<VehicleEstimator> ptr, const std::string& name, const std::string& jointType)
+    std::shared_ptr<VehicleEstimator> bearChild(const std::shared_ptr<VehicleEstimator> parent, const std::string& name, const std::string& jointType)
     {
         if (jointType == RevoluteJointModel::jointTypeName)
-            return std::make_shared<ChildVehicleEstimator<RevoluteJointModel>>(ptr, name);
+            return std::make_shared<ChildVehicleEstimator<RevoluteJointModel>>(parent, name);
 
         /* Add others like
         if (jointType == SomeOtherJointModel::jointTypeName)
-            return std::make_shared<ChildVehicleEstimator<SomeOtherJointModel>(ptr, name);
+            return std::make_shared<ChildVehicleEstimator<SomeOtherJointModel>(parent, name);
         */
 
         throw std::invalid_argument(("Could not find matching joint class for '" + jointType + "'!").c_str());
