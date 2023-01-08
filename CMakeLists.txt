@@ -45,12 +45,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 set(EIGEN_INC_DIR /usr/include/eigen3/)
 include_directories(
-  include
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/
-  ${catkin_INCLUDE_DIRS}
   ${EIGEN_INC_DIR}
   ${Eigen_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -169,13 +165,13 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-# include_directories(
-#   include
-#   ${catkin_INCLUDE_DIRS}
-#   ${CMAKE_CURRENT_SOURCE_DIR}/src/
-#   ${catkin_INCLUDE_DIRS}
-#   ${CMAKE_CURRENT_SOURCE_DIR}/..
-# )
+include_directories(
+  include
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/
+  ${catkin_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
