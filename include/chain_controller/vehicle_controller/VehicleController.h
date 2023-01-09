@@ -7,13 +7,16 @@
 #include <Eigen/Dense>
 
 #include <dynamic_reconfigure/server.h>
+#include <hippo_chain/VehicleControllerConfig.h>
+
+#include <mavros_msgs/AttitudeTarget.h>
 
 #include <hippo_chain/include/chain_controller/vehicle_model/VehicleModel.h>
 #include <hippo_chain/include/chain_controller/state/StateProvider.h>
 #include <hippo_chain/include/chain_controller/thruster_model/ThrusterModel.h>
 #include <hippo_chain/include/common/typedefs.h>
 #include <hippo_chain/include/common/sharedAlgorithms.hpp>
-#include <mavros_msgs/AttitudeTarget.h>
+#include <hippo_chain/include/common/DynamicReconfigureManager.h>
 
 
 class VehicleController
@@ -33,6 +36,14 @@ protected:
 
     Eigen::Vector6d xiAbs;  // abs velocity
 
+    typedef boost::function<void(const hippo_chain::VehicleControllerConfig &, uint32_t)> CallbackType;
+    CallbackType f;
+
+    static inline std::unique_ptr<DynamicReconfigureManager<hippo_chain::VehicleControllerConfig, true>> dynamicReconfigureManager;
+
+
+    virtual void updateControlParameters(const hippo_chain::VehicleControllerConfig& config, uint32_t level) = 0;
+
 
 public:
     VehicleController(const std::string& name, const int id)
@@ -42,13 +53,18 @@ public:
     , configProvider(new ConfigProvider(nh))
     , vehicleModel(configProvider)
     , thrusterModel(configProvider)
-    {}
+    , f(boost::bind(&VehicleController::updateControlParameters, this, _1, _2))
+    {
+        if (!dynamicReconfigureManager) dynamicReconfigureManager.reset(new DynamicReconfigureManager<hippo_chain::VehicleControllerConfig, true>("VehicleControllers"));
+        dynamicReconfigureManager->registerCallback(f, this);
+    }
 
     ~VehicleController()
     {
         if (ros::ok()) {
             stopThrusters();
         }
+        dynamicReconfigureManager->removeCallback(this);
     }
 
 

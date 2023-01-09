@@ -8,7 +8,7 @@
 #include <string>
 
 
-template<typename ConfigType>
+template<typename ConfigType, bool CheckedUpdate = false>
 class DynamicReconfigureManager
 {
 private:
@@ -20,6 +20,36 @@ private:
     CallbackType f;
     std::map<const void* const, ConstCallbackType> callbacks;
     ConfigType lastConfig;
+
+
+    void callback(ConfigType& config, uint32_t level)
+    {
+        callback(config, level, std::conditional_t<CheckedUpdate, std::true_type, std::false_type>{});
+    }
+
+    void callback(ConfigType& config, uint32_t level, std::true_type)
+    {
+        if (!config.update) return;
+        callback(config, level, std::false_type{});
+        config.update = false;
+    }
+
+    void callback(ConfigType& config, uint32_t level, std::false_type)
+    {
+        lastConfig = config;
+
+        for (auto it=callbacks.begin(); it!=callbacks.end(); it++) {
+            try {
+                it->second(config, level);
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr << e.what() << "\n";
+            }
+            catch (...)
+            {}
+        }
+    }
 
 
 public:
@@ -38,34 +68,24 @@ public:
 
     bool registerCallback(const ConstCallbackType& cb, const void* const obj)
     {
-        if (!callbacks.insert({obj, boost::ref(cb)}).second) return false;
-        cb(lastConfig, ~0);
-        return true;
+        return callbacks.insert({obj, boost::ref(cb)}).second;
+    }
+
+    void initCallback(const void* const obj)
+    {
+        try
+        {
+            callbacks.at(obj)(lastConfig, ~0);
+        }
+        catch(const std::out_of_range& e)
+        {
+            ROS_ERROR("Could not init dynamic reconfigure callback that has not been successfully registered yet!");
+        }
     }
 
     void removeCallback(const void* const obj)
     {
         auto val = callbacks.erase(obj);
-    }
-
-    void callback(ConfigType& config, uint32_t level)
-    {
-        if (!config.update) return;
-        lastConfig = config;
-        
-        for (auto it=callbacks.begin(); it!=callbacks.end(); it++) {
-            try {
-                it->second(config, level);
-            }
-            catch (const std::exception& e)
-            {
-                std::cerr << e.what() << "\n";
-            }
-            catch (...)
-            {}
-        }
-
-        config.update = false;
     }
 };
 

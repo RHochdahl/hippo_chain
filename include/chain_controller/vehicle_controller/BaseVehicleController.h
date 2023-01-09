@@ -3,7 +3,6 @@
 
 
 #include "VehicleController.h"
-#include <hippo_chain/BaseControllerConfig.h>
 
 
 class BaseVehicleController : public VehicleController
@@ -26,20 +25,15 @@ private:
 
     Eigen::Vector7d poseAbs;
 
-    dynamic_reconfigure::Server<hippo_chain::BaseControllerConfig> server;
-    dynamic_reconfigure::Server<hippo_chain::BaseControllerConfig>::CallbackType f;
 
-
-    void updateControlParameters(hippo_chain::BaseControllerConfig &config, uint32_t level)
+    void updateControlParameters(const hippo_chain::VehicleControllerConfig &config, uint32_t level)
     {
-        if (!config.update) return;
         param.kSigma1 = config.kSigma1;
         param.kSigma2 = config.kSigma2;
         param.kP = config.kP;
         param.kSat = config.kSat;
         param.lim = config.lim;
-        config.update = false;
-        ROS_INFO("Updated controller parameters for '%s'", nh->getNamespace().c_str());
+        ROS_INFO("Updated base controller parameters for '%s'", nh->getNamespace().c_str());
     }
 
     /**
@@ -89,10 +83,9 @@ private:
 public:
     BaseVehicleController(const std::string& name)
     : VehicleController(name, 0)
-    , server(ros::NodeHandle("BaseController"))
-    , f(boost::bind(&BaseVehicleController::updateControlParameters, this, _1, _2))
     {
-        server.setCallback(f);
+        VehicleController* base = static_cast<VehicleController*>(this);
+        base->dynamicReconfigureManager->initCallback(base);
         ROS_INFO("Constructed base vehicle '%s'", name.c_str());
     }
 
