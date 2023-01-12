@@ -49,17 +49,17 @@ public:
         {
         case Axis::x:
             theta = 2 * shared::sgn(qP.w*qC.x - qC.w*qP.x - qP.y*qC.z + qP.z*qC.y)
-                      * std::acos(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z);
+                      * std::acos(std::clamp(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z, -1.0, 1.0));
             break;
 
         case Axis::y:
             theta = 2 * shared::sgn(qP.w*qC.y - qC.w*qP.y - qP.z*qC.x + qP.x*qC.z)
-                      * std::acos(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z);
+                      * std::acos(std::clamp(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z, -1.0, 1.0));
             break;
 
         case Axis::z:
             theta = 2 * shared::sgn(qP.w*qC.z - qC.w*qP.z - qP.x*qC.y + qP.y*qC.x)
-                      * std::acos(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z);
+                      * std::acos(std::clamp(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z, -1.0, 1.0));
             break;
 
         default:
