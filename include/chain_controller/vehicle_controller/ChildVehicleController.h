@@ -65,7 +65,13 @@ public:
     void updateVehicleState(const std::shared_ptr<StateProvider> newState)
     {
         if (newState == NULL) throw auto_print_error("New state is not initialized!");
+        debugger.addEntry("pose", newState->pose.data(), newState->pose.size());
+        debugger.addEntry("twist", newState->twist.data(), newState->twist.size());
         jointModel.update(newState);
+        debugger.addEntry("A", jointModel.A);
+        debugger.addEntry("Phi", jointModel.Phi);
+        debugger.addEntry("Theta", jointModel.Theta);
+        debugger.addEntry("rel vel", jointModel.xiRel);
     }
 
     const Eigen::Vector6d& getBeta() const
@@ -82,31 +88,45 @@ public:
     {
         if (desiredState == NULL) throw auto_print_error("Desired state is not initialized!");
 
+        debugger.addEntry("desired pose", desiredState->pose.data(), desiredState->pose.size());
+        debugger.addEntry("desired twist", desiredState->twist.data(), desiredState->twist.size());
+
         controllerStates.thetaDes = desiredState->getPose<typename JointModel::JointVector>();
         controllerStates.zetaDes = desiredState->getTwist<typename JointModel::JointVector>();
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
-        controllerStates.sigma = controllerStates.zetaDes + param.kSigma * (controllerStates.thetaDes - jointModel.theta);
-        controllerStates.sigmaDot = param.kSigma * (controllerStates.zetaDes - jointModel.zeta);
+        debugger.addEntry("bounded desired pose", controllerStates.thetaDes);
+        debugger.addEntry("bounded desired twist", controllerStates.zetaDes);
+        controllerStates.sigma = controllerStates.zetaDes + param.kSigma * (controllerStates.thetaDes - jointModel.theta);  // FIXME: T*zeta + ...
+        controllerStates.sigmaDot = param.kSigma * (controllerStates.zetaDes - jointModel.zeta);                            // FIXME: k*T*zeta_error
+        debugger.addEntry("sigma", controllerStates.sigma);
+        debugger.addEntry("sigma dot", controllerStates.sigmaDot);
 
         xiAbs = jointModel.transform(parent->getXiAbs()) + jointModel.xiRel;
+        debugger.addEntry("abs vel", xiAbs);
 
         const Eigen::Vector6d betaTemp = jointModel.transform(parent->getBeta());
         controllerStates.beta = jointModel.mapVelocity(controllerStates.sigma) + betaTemp;
         controllerStates.betaDot = jointModel.transform(parent->getBetaDot())
                                  + jointModel.mapAcceleration(controllerStates.sigmaDot, controllerStates.sigma)
                                  + shared::cross6(betaTemp, jointModel.xiRel);
+        debugger.addEntry("beta", controllerStates.beta);
+        debugger.addEntry("beta dot", controllerStates.betaDot);
 
         tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot);
+        debugger.addEntry("tau", tau);
     }
 
-    void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) const
+    void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx)
     {
         parent->setJointWrenches(jointModel.transposedTransform(tau));
         const typename JointModel::JointVector s = controllerStates.sigma - jointModel.zeta;
+        debugger.addEntry("s", s);
         if constexpr (std::is_same<typename JointModel::JointVector, double>::value) {
             eta(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(std::abs(s), param.lim);
+            debugger.addEntry("eta", eta(idx));
         } else {
             eta.middleRows<JointModel::DOF>(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+            debugger.addEntry("eta", eta.middleRows<JointModel::DOF>(idx));
         }
     }
 

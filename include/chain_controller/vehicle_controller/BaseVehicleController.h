@@ -54,6 +54,8 @@ private:
     {
         controllerStates.desiredPose = desiredState->getPose<Eigen::Vector7d>();
         controllerStates.desiredTwist = desiredState->getTwist<Eigen::Vector6d>();
+        debugger.addEntry("desired pose", desiredState->pose.data(), desiredState->pose.size());
+        debugger.addEntry("desired twist", desiredState->twist.data(), desiredState->twist.size());
 
         if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows<4>())) throw quaternion_error();
         if (!shared::isUnitQuaternion(poseAbs.bottomRows<4>())) throw quaternion_error();
@@ -75,6 +77,7 @@ private:
 
         controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * limitPosError(posErr);
         controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
+        debugger.addEntry("sigma", controllerStates.sigma);
 
         // Assumption: des twist in world frame, actual twist in base frame
         const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
@@ -86,6 +89,7 @@ private:
 
         controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
         controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * param.kSigma2 * epsilonErrDot_2;
+        debugger.addEntry("sigma dot", controllerStates.sigmaDot);
     }
 
 
@@ -112,6 +116,8 @@ public:
 
         poseAbs = newState->getPose<Eigen::Vector7d>();
         xiAbs = newState->getTwist<Eigen::Vector6d>();
+        debugger.addEntry("abs pose", poseAbs);
+        debugger.addEntry("abs vel", xiAbs);
     }
 
     /**
@@ -125,6 +131,7 @@ public:
 
         calcSigma(desiredState);
         tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot);
+        debugger.addEntry("tau", tau);
     }
 
     void calcB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
@@ -146,10 +153,12 @@ public:
         B.topRows<6>() = X;
     }
 
-    void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) const
+    void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx)
     {
         const Eigen::Vector6d s = controllerStates.sigma - xiAbs;
+        debugger.addEntry("s", s);
         eta.topRows<6>() = tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+        debugger.addEntry("eta", eta.topRows<6>());
     }
 
     const Eigen::Vector6d& getBeta() const

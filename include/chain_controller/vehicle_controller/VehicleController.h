@@ -17,6 +17,7 @@
 #include <hippo_chain/include/common/typedefs.h>
 #include <hippo_chain/include/common/sharedAlgorithms.hpp>
 #include <hippo_chain/include/common/DynamicReconfigureManager.h>
+#include <hippo_chain/include/common/Debugger.h>
 
 
 class VehicleController
@@ -27,6 +28,7 @@ public:
 protected:
     std::shared_ptr<ros::NodeHandle> nh;
     ros::Publisher pub;
+    Debugger debugger;
     std::shared_ptr<ConfigProvider> configProvider;
 
     VehicleModel vehicleModel;
@@ -46,6 +48,7 @@ protected:
         CHILD = 2
     };
 
+
     virtual void updateControlParameters(const hippo_chain::VehicleControllerConfig& config, uint32_t level) = 0;
 
 
@@ -54,6 +57,7 @@ public:
     : ID(id)
     , nh(new ros::NodeHandle(name))
     , pub(nh->advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 1))
+    , debugger(nh->getNamespace(), "debug_control")
     , configProvider(new ConfigProvider(nh))
     , vehicleModel(configProvider)
     , thrusterModel(configProvider)
@@ -85,6 +89,7 @@ public:
     template<typename Derived>
     void setJointWrenches(const Eigen::MatrixBase<Derived>& jointWrench)
     {
+        debugger.addEntry("add to tau", jointWrench);
         tau.noalias() += jointWrench;
     }
 
@@ -98,7 +103,7 @@ public:
      * 
      * @param thrusterOutputs double pointer to first element of double array with size four
      */
-    void stopThrusters() const
+    void stopThrusters()
     {
         mavros_msgs::AttitudeTarget msg;
         msg.header.stamp = ros::Time::now();
@@ -114,7 +119,7 @@ public:
      * 
      * @param thrusterOutputs double pointer to first element of double array with size four
      */
-    void setThrusters(const double* thrusterOutputs) const
+    void setThrusters(const double* thrusterOutputs)
     {
         mavros_msgs::AttitudeTarget msg;
         msg.header.stamp = ros::Time::now();
@@ -124,6 +129,8 @@ public:
         msg.body_rate.z = thrusterCommands[2];
         msg.thrust      = thrusterCommands[3];
         pub.publish(msg);
+        debugger.addEntry("thrusters", thrusterCommands.data(), thrusterCommands.size());
+        debugger.publish();
     }
 
     /**
@@ -135,7 +142,7 @@ public:
 
     virtual void calcDecoupledWrenches(const std::shared_ptr<StateProvider> desiredState) = 0;
 
-    virtual void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) const = 0;
+    virtual void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx) = 0;
 
     // first step of calculating B recursively
     virtual void calcB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
