@@ -16,9 +16,9 @@ struct StateProvider
     , twist(twist)
     {}
 
-    StateProvider(const std::vector<double>& pose)
+    StateProvider(const std::vector<double>& pose, const int size)
     : pose(pose)
-    , twist(pose.size(), 0)
+    , twist(size, 0)
     {}
 
     StateProvider(const int size)

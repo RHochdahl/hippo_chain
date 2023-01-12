@@ -30,7 +30,7 @@ public:
     void bark(const ros::TimerEvent& e)
     {
         for (auto it=state.begin(); it!=state.end(); it++) {
-            it->reset(new StateProvider((*it)->pose));
+            it->reset(new StateProvider((*it)->pose, (*it)->twist.size()));
         }
         ROS_WARN_THROTTLE(5.0, "Target too old, setting target velocity to zero.");
         updated = true;
