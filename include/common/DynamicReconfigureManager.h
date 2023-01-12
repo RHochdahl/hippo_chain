@@ -13,6 +13,8 @@
 
 DEFINE_HAS_PARAM(update)
 DEFINE_HAS_PARAM(save_config)
+DEFINE_HAS_PARAM(clear)
+DEFINE_HAS_PARAM(reset_to_default)
 
 
 template<typename ConfigType>
@@ -27,6 +29,7 @@ private:
     CallbackType f;
     std::map<const void* const, ConstCallbackType> callbacks;
     ConfigType lastConfig;
+    ConfigType defaultConfig;
     uint32_t levelCombined;
 
     std::string configFilePath;
@@ -36,10 +39,23 @@ private:
     {
         levelCombined |= level;
 
+        if constexpr (hippo::has_param_clear_v<ConfigType>()) if (config.clear) {
+            config = lastConfig;
+            levelCombined = 0;
+            return;
+        }
+
+        if constexpr (hippo::has_param_reset_to_default_v<ConfigType>()) if (config.reset_to_default) {
+            config = defaultConfig;
+            callbackImpl(config, ~0);
+            levelCombined = 0;
+            return;
+        }
+
         if constexpr (hippo::has_param_update_v<ConfigType>()) if (!config.update) return;
         else config.update = false;
 
-        if constexpr (hippo::has_param_save_config_v<ConfigType>()) save(config);
+        if constexpr (hippo::has_param_save_config_v<ConfigType>()) if (config.save_config) save(config);
 
         callbackImpl(config, levelCombined);
         levelCombined = 0;
@@ -64,7 +80,10 @@ private:
 
     void save(ConfigType& config)
     {
+        ROS_INFO("Saving dynamic reconfigure parameters");
+
         config.save_config = false;
+
         if (configFilePath.empty()) {
             ROS_ERROR("Couldn't save config. No file path was specified.");
             return;
@@ -96,11 +115,13 @@ private:
         }
 
         configFile.close();
+        ROS_INFO("Successfully saved dynamic reconfigure parameters to '%s'.", configFilePath.c_str());
     }
 
     bool load(ConfigType& config)
     {
-        config.save_config = false;
+        ROS_INFO("Loading dynamic reconfigure parameters");
+
         if (configFilePath.empty()) {
             ROS_ERROR("Couldn't save config. No file path was specified.");
             return false;
@@ -193,6 +214,7 @@ private:
         }
 
         config.__fromMessage__(msg);
+        ROS_INFO("Successfully loaded dynamic reconfigure parameters from '%s'.", configFilePath.c_str());
         return true;
     }
 
@@ -203,13 +225,20 @@ public:
     , server(ros::NodeHandle(name))
     , f(boost::bind(&DynamicReconfigureManager::callback, this, _1, _2))
     , callbacks()
+    , lastConfig()
+    , defaultConfig()
     , levelCombined(0)
     , configFilePath(configFilePath)
     {
-        if (initConfig) server.updateConfig(*initConfig);
-        else if (!configFilePath.empty()) {
+        if (initConfig) {
+            server.updateConfig(*initConfig);
+            lastConfig = defaultConfig = *initConfig;
+        } else if (!configFilePath.empty()) {
             ConfigType fileConfig;
-            if (load(fileConfig)) server.updateConfig(fileConfig);
+            if (load(fileConfig)) {
+                server.updateConfig(fileConfig);
+                lastConfig = defaultConfig = fileConfig;
+            }
         }
         server.setCallback(f);
     }
