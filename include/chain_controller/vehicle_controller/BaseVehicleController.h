@@ -11,6 +11,7 @@ private:
     struct ControllerParam {
         double kSigma1;
         double kSigma2;
+        double maxPosError;
         double kP;
         double kSat;
         double lim;
@@ -28,12 +29,20 @@ private:
 
     void updateControlParameters(const hippo_chain::VehicleControllerConfig &config, uint32_t level)
     {
+        if (!(level & DynamicReconfigureLevels::BASE)) return;
         param.kSigma1 = config.kSigma1;
         param.kSigma2 = config.kSigma2;
+        param.maxPosError = config.maxPosErr;
         param.kP = config.kP;
         param.kSat = config.kSat;
         param.lim = config.lim;
         ROS_INFO("Updated base controller parameters for '%s'", nh->getNamespace().c_str());
+    }
+
+    template<typename Derived>
+    auto limitPosError(const Eigen::MatrixBase<Derived>& posError) const
+    {
+        return std::min(1.0, param.maxPosError / posError.norm()) * posError;
     }
 
     /**
@@ -64,7 +73,7 @@ private:
         const Eigen::Vector3d xiLinDes = R_1_0 * controllerStates.desiredTwist.topRows<3>();
         const Eigen::Vector3d xiAngDes = R_1_0 * controllerStates.desiredTwist.bottomRows<3>();
 
-        controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * posErr;
+        controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * limitPosError(posErr);
         controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
 
         // Assumption: des twist in world frame, actual twist in base frame

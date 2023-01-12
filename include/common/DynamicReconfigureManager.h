@@ -7,8 +7,15 @@
 #include <map>
 #include <string>
 
+#include <hippo_chain/include/common/defines.h>
 
-template<typename ConfigType, bool CheckedUpdate = false>
+
+
+DEFINE_HAS_PARAM(update)
+DEFINE_HAS_PARAM(save_config)
+
+
+template<typename ConfigType>
 class DynamicReconfigureManager
 {
 private:
@@ -20,21 +27,25 @@ private:
     CallbackType f;
     std::map<const void* const, ConstCallbackType> callbacks;
     ConfigType lastConfig;
+    uint32_t levelCombined;
+
+    std::string configFilePath;
 
 
     void callback(ConfigType& config, uint32_t level)
     {
-        callback(config, level, std::conditional_t<CheckedUpdate, std::true_type, std::false_type>{});
+        levelCombined |= level;
+
+        if constexpr (hippo::has_param_update_v<ConfigType>()) if (!config.update) return;
+        else config.update = false;
+
+        if constexpr (hippo::has_param_save_config_v<ConfigType>()) save(config);
+
+        callbackImpl(config, levelCombined);
+        levelCombined = 0;
     }
 
-    void callback(ConfigType& config, uint32_t level, std::true_type)
-    {
-        if (!config.update) return;
-        callback(config, level, std::false_type{});
-        config.update = false;
-    }
-
-    void callback(ConfigType& config, uint32_t level, std::false_type)
+    void callbackImpl(ConfigType& config, uint32_t level)
     {
         lastConfig = config;
 
@@ -44,23 +55,168 @@ private:
             }
             catch (const std::exception& e)
             {
-                std::cerr << e.what() << "\n";
+                ROS_ERROR("Error in dynamic reconfigure callback: %s", e.what());
             }
             catch (...)
             {}
         }
     }
 
+    void save(ConfigType& config)
+    {
+        config.save_config = false;
+        if (configFilePath.empty()) {
+            ROS_ERROR("Couldn't save config. No file path was specified.");
+            return;
+        }
+        if(configFilePath.substr(configFilePath.find_last_of(".") + 1) != "csv") {
+            ROS_ERROR("Couldn't save config. Specified file is not a csv file.");
+            return;
+        }
+
+        dynamic_reconfigure::Config msg;
+        config.__toMessage__(msg);
+
+        std::ofstream configFile(configFilePath);
+
+        for (auto it=msg.bools.begin(); it!=msg.bools.end(); it++) {
+            configFile << "bool," << it->name << "," << std::to_string(it->value) << "\n";
+        }
+        for (auto it=msg.ints.begin(); it!=msg.ints.end(); it++) {
+            configFile << "int," << it->name << "," << std::to_string(it->value) << "\n";
+        }
+        for (auto it=msg.doubles.begin(); it!=msg.doubles.end(); it++) {
+            configFile << "double," << it->name << "," << std::to_string(it->value) << "\n";
+        }
+        for (auto it=msg.strs.begin(); it!=msg.strs.end(); it++) {
+            configFile << "str," << it->name << "," << it->value << "\n";
+        }
+        for (auto it=msg.groups.begin(); it!=msg.groups.end(); it++) {
+            configFile << "group," << it->name << "," << std::to_string(it->state) << "," << std::to_string(it->id) << "," << std::to_string(it->parent) << "\n";
+        }
+
+        configFile.close();
+    }
+
+    bool load(ConfigType& config)
+    {
+        config.save_config = false;
+        if (configFilePath.empty()) {
+            ROS_ERROR("Couldn't save config. No file path was specified.");
+            return false;
+        }
+        if (configFilePath.substr(configFilePath.find_last_of(".") + 1) != "csv") {
+            ROS_ERROR("Couldn't save config. Specified file is not a csv file.");
+            return false;
+        }
+
+        std::ifstream configFile(configFilePath);
+
+        if (!configFile.is_open()) {
+            ROS_ERROR("Could not open file '%s'", configFilePath.c_str());
+            return false;
+        }
+
+        dynamic_reconfigure::Config msg;
+        config.__toMessage__(msg);
+        std::string line, entry;
+
+        try
+        {
+            for (auto it=msg.bools.begin(); it!=msg.bools.end(); it++) {
+                if (!std::getline(configFile, line))            throw std::runtime_error("More lines expected!");
+                std::istringstream lineStream(line);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for type expected!");
+                if (entry != "bool")                            throw std::runtime_error("Unexpected type '" + entry + "'! Expected 'bool'.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for name expected!");
+                if (entry != it->name)                          throw std::runtime_error("Unexpected name '" + entry + "' for bool param! '" + it->name + "' expected.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for bool value expected!");
+                it->value = std::stoi(entry);
+                if (std::getline(lineStream, entry, ','))       throw std::runtime_error("Unexpected entry '" + entry + "'!");
+            }
+            for (auto it=msg.ints.begin(); it!=msg.ints.end(); it++) {
+                if (!std::getline(configFile, line))            throw std::runtime_error("More lines expected!");
+                std::istringstream lineStream(line);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for type expected!");
+                if (entry != "int")                             throw std::runtime_error("Unexpected type '" + entry + "'! Expected 'int'.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for name expected!");
+                if (entry != it->name)                          throw std::runtime_error("Unexpected name '" + entry + "' for bool param! '" + it->name + "' expected.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for int value expected!");
+                it->value = std::stoi(entry);
+                if (std::getline(lineStream, entry, ','))       throw std::runtime_error("Unexpected entry '" + entry + "'!");
+            }
+            for (auto it=msg.doubles.begin(); it!=msg.doubles.end(); it++) {
+                if (!std::getline(configFile, line))            throw std::runtime_error("More lines expected!");
+                std::istringstream lineStream(line);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for type expected!");
+                if (entry != "double")                          throw std::runtime_error("Unexpected type '" + entry + "'! Expected 'double'.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for name expected!");
+                if (entry != it->name)                          throw std::runtime_error("Unexpected name '" + entry + "' for bool param! '" + it->name + "' expected.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for double value expected!");
+                it->value = std::stod(entry);
+                if (std::getline(lineStream, entry, ','))       throw std::runtime_error("Unexpected entry '" + entry + "'!");
+            }
+            for (auto it=msg.strs.begin(); it!=msg.strs.end(); it++) {
+                if (!std::getline(configFile, line))            throw std::runtime_error("More lines expected!");
+                std::istringstream lineStream(line);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for type expected!");
+                if (entry != "str")                             throw std::runtime_error("Unexpected type '" + entry + "'! Expected 'str'.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for name expected!");
+                if (entry != it->name)                          throw std::runtime_error("Unexpected name '" + entry + "' for bool param! '" + it->name + "' expected.");
+                if (!std::getline(lineStream, it->value, ','))  throw std::runtime_error("Entry for string value expected!");;
+                if (std::getline(lineStream, entry, ','))       throw std::runtime_error("Unexpected entry '" + entry + "'!");
+            }
+            for (auto it=msg.groups.begin(); it!=msg.groups.end(); it++) {
+                if (!std::getline(configFile, line))            throw std::runtime_error("More lines expected!");
+                std::istringstream lineStream(line);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for type expected!");
+                if (entry != "group")                           throw std::runtime_error("Unexpected type '" + entry + "'! Expected 'group'.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for name expected!");
+                if (entry != it->name)                          throw std::runtime_error("Unexpected name '" + entry + "' for bool param! '" + it->name + "' expected.");
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for state of group expected!");
+                it->state = std::stoi(entry);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for group id expected!");
+                it->id = std::stoi(entry);
+                if (!std::getline(lineStream, entry, ','))      throw std::runtime_error("Entry for parent of group expected!");
+                it->parent = std::stoi(entry);
+                if (std::getline(lineStream, entry, ','))       throw std::runtime_error("Unexpected entry '" + entry + "'!");
+            }
+
+            if (std::getline(configFile, line))                 throw std::runtime_error("Unexpected line '" + line + "'!");
+            configFile.close();
+        }
+        catch(const std::exception& e)
+        {
+            ROS_ERROR("Could not read dynamic reconfigure config from file: %s", e.what());
+            configFile.close();
+            return false;
+        }
+
+        config.__fromMessage__(msg);
+        return true;
+    }
+
 
 public:
-    DynamicReconfigureManager(const std::string& name)
+    DynamicReconfigureManager(const std::string& name, const ConfigType* const initConfig = nullptr, const std::string& configFilePath = "")
     : name(name)
     , server(ros::NodeHandle(name))
     , f(boost::bind(&DynamicReconfigureManager::callback, this, _1, _2))
     , callbacks()
+    , levelCombined(0)
+    , configFilePath(configFilePath)
     {
+        if (initConfig) server.updateConfig(*initConfig);
+        else if (!configFilePath.empty()) {
+            ConfigType fileConfig;
+            if (load(fileConfig)) server.updateConfig(fileConfig);
+        }
         server.setCallback(f);
     }
+
+    DynamicReconfigureManager(const std::string& name, const std::string& configFilePath)
+    : DynamicReconfigureManager(name, nullptr, configFilePath)
+    {}
 
     ~DynamicReconfigureManager()
     {}
@@ -85,7 +241,7 @@ public:
 
     void removeCallback(const void* const obj)
     {
-        auto val = callbacks.erase(obj);
+        callbacks.erase(obj);
     }
 };
 

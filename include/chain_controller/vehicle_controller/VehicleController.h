@@ -39,8 +39,12 @@ protected:
     typedef boost::function<void(const hippo_chain::VehicleControllerConfig &, uint32_t)> CallbackType;
     CallbackType f;
 
-    static inline std::unique_ptr<DynamicReconfigureManager<hippo_chain::VehicleControllerConfig, true>> dynamicReconfigureManager;
+    static inline std::unique_ptr<DynamicReconfigureManager<hippo_chain::VehicleControllerConfig>> dynamicReconfigureManager;
 
+    enum DynamicReconfigureLevels {
+        BASE = 1,
+        CHILD = 2
+    };
 
     virtual void updateControlParameters(const hippo_chain::VehicleControllerConfig& config, uint32_t level) = 0;
 
@@ -55,7 +59,11 @@ public:
     , thrusterModel(configProvider)
     , f(boost::bind(&VehicleController::updateControlParameters, this, _1, _2))
     {
-        if (!dynamicReconfigureManager) dynamicReconfigureManager.reset(new DynamicReconfigureManager<hippo_chain::VehicleControllerConfig, true>("VehicleControllers"));
+        if (!dynamicReconfigureManager) {
+            std::string configFilePath = "";
+            if (ros::param::get("dynamic_reconfigure_dir", configFilePath)) configFilePath += "VecicleControllerConfig.csv";
+            dynamicReconfigureManager.reset(new DynamicReconfigureManager<hippo_chain::VehicleControllerConfig>("VehicleControllers", configFilePath));
+        }
         dynamicReconfigureManager->registerCallback(f, this);
     }
 
@@ -93,7 +101,7 @@ public:
     void stopThrusters() const
     {
         mavros_msgs::AttitudeTarget msg;
-        msg.header.stamp = ros::Time::now();     
+        msg.header.stamp = ros::Time::now();
         msg.body_rate.x = 0;
         msg.body_rate.y = 0;
         msg.body_rate.z = 0;
@@ -110,7 +118,7 @@ public:
     {
         mavros_msgs::AttitudeTarget msg;
         msg.header.stamp = ros::Time::now();
-        std::array<double, 4> thrusterCommands = thrusterModel.calcThrusterCommands(thrusterOutputs);        
+        std::array<double, 4> thrusterCommands = thrusterModel.calcThrusterCommands(thrusterOutputs);
         msg.body_rate.x = thrusterCommands[0];
         msg.body_rate.y = thrusterCommands[1];
         msg.body_rate.z = thrusterCommands[2];

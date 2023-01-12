@@ -33,6 +33,7 @@ private:
 
     void updateControlParameters(const hippo_chain::VehicleControllerConfig& config, uint32_t level)
     {
+        if (!(level & DynamicReconfigureLevels::CHILD)) return;
         param.kSigma = config.kSigma;
         param.kP = config.kP;
         param.kSat = config.kSat;
