@@ -79,7 +79,7 @@ private:
         return modified = true;
     }
 
-    bool addChildVehicle(const VehicleParam param)
+    bool addChildVehicle(const VehicleParam& param)
     {
         if (running)                        throw addition_error("Controller still running. Couldn't add vehicle.");
         if (param.publicId < 0)             throw addition_error("Vehicle has invalid ID! Couldn't add vehicle.");
@@ -97,7 +97,7 @@ private:
         }
     }
 
-    bool addBaseVehicle(const VehicleParam param)
+    bool addBaseVehicle(const VehicleParam& param)
     {
         if (vehicleControllers.size())  throw addition_error("Base vehicle already exists!");
         if (idMap->size())              throw addition_error("Base vehicle already exists!");
@@ -123,7 +123,7 @@ private:
         }
     }
 
-    bool addVehicles(const std::vector<std::string> vehicles)
+    bool addVehicles(const std::vector<std::string>& vehicles)
     {
         std::vector<VehicleParam> waitingList(0);
 

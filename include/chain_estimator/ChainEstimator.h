@@ -50,7 +50,7 @@ private:
         ROS_INFO("Added vehicle with ID %i to chain estimator.", publicId);
     }
 
-    void addChildVehicle(const VehicleParam param)
+    void addChildVehicle(const VehicleParam& param)
     {
         if (param.publicId < 0)             throw addition_error("Vehicle has invalid ID! Couldn't add vehicle.");
         if (param.parentId < 0)             throw addition_error("Named parent vehicle has invalid ID! Couldn't add vehicle.");
@@ -67,7 +67,7 @@ private:
         }
     }
 
-    void addBaseVehicle(const VehicleParam param)
+    void addBaseVehicle(const VehicleParam& param)
     {
         if (vehicleEstimators.size())   throw addition_error("Base vehicle already exists!");
         if (idMap->size())              throw addition_error("Base vehicle already exists!");
@@ -93,7 +93,7 @@ private:
         }
     }
 
-    bool addVehicles(const std::vector<std::string> vehicles)
+    bool addVehicles(const std::vector<std::string>& vehicles)
     {
         std::vector<VehicleParam> waitingList(0);
 
