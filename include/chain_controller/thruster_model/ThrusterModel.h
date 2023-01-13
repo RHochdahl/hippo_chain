@@ -46,7 +46,7 @@ private:
         Eigen::Matrix<double, 6, 4> tempPsi = Eigen::Matrix<double, 6, 4>::Zero();
 
         for (int i=0; i<4; i++) {
-            tempPsi(0, i) = thrusterArray[i].cw ? thrusterArray[i].maxForce : -thrusterArray[i].maxForce;
+            tempPsi(0, i) = thrusterArray[i].maxForce;
             tempPsi(3, i) = thrusterArray[i].cw ? thrusterArray[i].maxTorque : -thrusterArray[i].maxTorque;
             tempPsi(4, i) = thrusterArray[i].rz * tempPsi(0, i);
             tempPsi(5, i) = -thrusterArray[i].ry * tempPsi(0, i);
