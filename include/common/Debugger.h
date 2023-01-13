@@ -39,13 +39,14 @@ public:
     template<typename Scalar, int Rows, int Cols>
     void addEntry(const std::string& name, const Eigen::Matrix<Scalar, Rows, Cols>& mat)
     {
-        if constexpr (Cols == 1 || Rows == 1) {
-            addEntry(name, mat.data(), mat.SizeAtCompileTime);
-            return;
-        } else if constexpr (Rows == Eigen::Dynamic || Cols == Eigen::Dynamic)
+        if constexpr (Rows == Eigen::Dynamic || Cols == Eigen::Dynamic) {
             if (mat.rows() == 1 || mat.cols() == 1) {
                 addEntry(name, mat.data(), mat.size());
                 return;
+            }
+        } else if constexpr (Cols == 1 || Rows == 1) {
+            addEntry(name, mat.data(), mat.SizeAtCompileTime);
+            return;
         }
 
         std::ostringstream out;
@@ -55,10 +56,10 @@ public:
             for (int j=0; j<mat.cols(); j++) {
                 out << mat(i, j) << ", ";
             }
-            out.seekp(-1,out.cur);
+            out.seekp(-2,out.cur);
             out << "]; ";
         }
-        out.seekp(-1,out.cur);
+        out.seekp(-2,out.cur);
         out << "]";
         addEntry(name, out.str());
     }
