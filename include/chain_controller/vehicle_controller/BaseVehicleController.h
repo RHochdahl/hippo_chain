@@ -39,10 +39,9 @@ private:
         ROS_INFO("Updated base controller parameters for '%s'", nh->getNamespace().c_str());
     }
 
-    template<typename Derived>
-    auto limitPosError(const Eigen::MatrixBase<Derived>& posError) const
+    auto limitPosError(const Eigen::Vector3d& posError) const
     {
-        return std::min(1.0, param.maxPosError / posError.norm()) * posError;
+        return std::min(1.0, param.maxPosError / posError.topRows<2>().norm()) * posError;
     }
 
     /**
@@ -67,29 +66,36 @@ private:
 
         // rotation matrix R^1_0 or S_K'K to rotate vector from world to base frame
         const Eigen::Matrix3d R_1_0 = Eigen::Quaterniond(poseAbs[3], -poseAbs[4], -poseAbs[5], -poseAbs[6]).toRotationMatrix();
+        debugger.addEntry("R", R_1_0);
 
         const Eigen::Vector3d posErr = R_1_0 * (controllerStates.desiredPose.topRows<3>() - poseAbs.topRows<3>());
         const double etaErr = rQuatAct*rQuatDes + iQuatAct.dot(iQuatDes);
         const Eigen::Vector3d epsilonErr = shared::sgn(etaErr) * (rQuatAct * iQuatDes - rQuatDes * iQuatAct + iQuatDes.cross(iQuatAct));
+        debugger.addEntry("position error", posErr);
+        debugger.addEntry("epsilon error", epsilonErr);
 
         const Eigen::Vector3d xiLinDes = R_1_0 * controllerStates.desiredTwist.topRows<3>();
         const Eigen::Vector3d xiAngDes = R_1_0 * controllerStates.desiredTwist.bottomRows<3>();
 
         controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * limitPosError(posErr);
         controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
-        debugger.addEntry("sigma", controllerStates.sigma);
+        debugger.addEntry("sigma/beta", controllerStates.sigma);
 
         // Assumption: des twist in world frame, actual twist in base frame
         const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
         const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows<3>();
         const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(omegaErr);   // _2 because the factor 0.5 is applied later
+#ifndef NDEBUG
+        debugger.addEntry("d/dt position error", posErrDot);
+        debugger.addEntry("d/dt epsilon error", 0.5*epsilonErrDot_2);
+#endif  // NDEBUG
 
         const Eigen::Vector3d xiLinDesDot = xiLinDes.cross(xiAbs.bottomRows<3>());
         const Eigen::Vector3d xiAngDesDot = xiAngDes.cross(xiAbs.bottomRows<3>());
 
         controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
         controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * param.kSigma2 * epsilonErrDot_2;
-        debugger.addEntry("sigma dot", controllerStates.sigmaDot);
+        debugger.addEntry("d/dt sigma/beta", controllerStates.sigmaDot);
     }
 
 
@@ -130,7 +136,7 @@ public:
         if (desiredState == NULL) throw auto_print_error("Desired state is not initialized!");
 
         calcSigma(desiredState);
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot);
+        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot, &debugger);
         debugger.addEntry("tau", tau);
     }
 

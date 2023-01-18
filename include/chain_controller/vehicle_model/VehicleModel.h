@@ -50,17 +50,27 @@ public:
              typename Derived2>
     Eigen::Vector6d calcWrenches(const Eigen::MatrixBase<Derived1>& absVel,
                                  const Eigen::Vector6d& beta,
-                                 const Eigen::MatrixBase<Derived2>& dbeta) const
+                                 const Eigen::MatrixBase<Derived2>& dbeta,
+                                 Debugger* debugger=NULL) const
     {
         // zero net buoyancy is assumed
 
         Eigen::Vector6d result;
-
+// #define USE_ACTUAL_VELOCITY
+#ifndef USE_ACTUAL_VELOCITY
         // coriolis wrenches
         const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
+        if (debugger) debugger->addEntry("momentum", momentum);
         result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(momentum.topRows<3>());
         result.bottomRows<3>().noalias()    = beta.topRows<3>().cross(momentum.topRows<3>())
                                             + beta.bottomRows<3>().cross(momentum.bottomRows<3>());
+
+#ifndef NDEBUG
+        if (debugger) debugger->addEntry("coriolis wrenches", result);
+        if (debugger) debugger->addEntry("inertial wrenches", inertias.cwiseProduct(dbeta));
+        if (debugger) debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(beta));
+        if (debugger) debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs()));
+#endif  // NDEBUG
 
         // inertial wrenches
         result.noalias() += inertias.cwiseProduct(dbeta);
@@ -68,7 +78,27 @@ public:
         // drag wrenches
         result.noalias() += linDragCoeff.cwiseProduct(beta);
         result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
+#else  // USE_ACTUAL_VELOCITY
+        Eigen::Vector6d absVelVec = absVel;
 
+        // coriolis wrenches
+        const Eigen::Vector6d momentum = inertias.cwiseProduct(absVelVec);
+        if (debugger) debugger->addEntry("momentum", momentum);
+        result.topRows<3>().noalias()       = absVelVec.bottomRows<3>().cross(momentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = absVelVec.topRows<3>().cross(momentum.topRows<3>())
+                                            + absVelVec.bottomRows<3>().cross(momentum.bottomRows<3>());
+
+#ifndef NDEBUG
+        if (debugger) debugger->addEntry("coriolis wrenches", result);
+        if (debugger) debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(absVelVec));
+        if (debugger) debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(absVelVec).cwiseProduct(absVelVec.cwiseAbs()));
+#endif  // NDEBUG
+
+        // drag wrenches
+        result.noalias() += linDragCoeff.cwiseProduct(absVelVec);
+        result.noalias() += quadDragCoeff.cwiseProduct(absVelVec).cwiseProduct(absVelVec.cwiseAbs());
+#endif  // USE_ACTUAL_VELOCITY
+//        result.setZero();
         return result;
     }
 };

@@ -124,12 +124,14 @@ public:
         mavros_msgs::AttitudeTarget msg;
         msg.header.stamp = ros::Time::now();
         std::array<double, 4> thrusterCommands = thrusterModel.calcThrusterCommands(thrusterOutputs);
-        msg.body_rate.x = thrusterCommands[0];
-        msg.body_rate.y = thrusterCommands[1];
-        msg.body_rate.z = thrusterCommands[2];
-        msg.thrust      = thrusterCommands[3];
+        // negative signs needed because of mavros frame conversion frd <-> flu
+        msg.body_rate.x =  thrusterCommands[0];
+        msg.body_rate.y = -thrusterCommands[1];
+        msg.body_rate.z = -thrusterCommands[2];
+        msg.thrust      =  thrusterCommands[3];
         pub.publish(msg);
         debugger.addEntry("thrusters", thrusterCommands.data(), thrusterCommands.size());
+        debugger.addEntry("forces", thrusterModel.Psi*Eigen::Vector4d(thrusterOutputs));
         debugger.publish();
     }
 

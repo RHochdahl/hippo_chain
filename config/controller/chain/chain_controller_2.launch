@@ -8,7 +8,7 @@
     <include ns="uuv0" file="$(arg base_file)" />
 
     <include ns="uuv1" file="$(arg child_file)" >
-        <arg name="ahead_of_parent" value="true" />
+        <arg name="ahead_of_parent" value="false" />
         <arg name="parent" value="uuv00" />
     </include>
 </launch>

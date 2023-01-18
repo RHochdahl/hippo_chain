@@ -8,7 +8,7 @@ namespace po = boost::program_options;
 struct EstimatorOptions
 {
     std::vector<std::string> vehicles;
-    double rate = 20.0;
+    double rate = std::numeric_limits<double>::quiet_NaN();
 };
 
 EstimatorOptions parseArgs(int argc, char **argv)

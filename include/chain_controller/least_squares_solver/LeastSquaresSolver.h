@@ -3,20 +3,26 @@
 
 
 #include <Eigen/Dense>
+#include <ctime>
+#include <hippo_chain/include/common/Debugger.h>
 
 
 class LeastSquaresSolver
 {
+protected:
+    Debugger debugger;
+
 public:
     const int SIZE;
-public:
+
     LeastSquaresSolver(const int size)
-    : SIZE(size)
+    : debugger("", "lsq_solver")
+    , SIZE(size)
     {}
 
-    virtual void solve(const Eigen::Ref<const Eigen::MatrixXd>& B,
-                       const Eigen::Ref<const Eigen::VectorXd>& eta,
-                       Eigen::Ref<Eigen::VectorXd> nu) = 0;
+    virtual void solve(const Eigen::MatrixXd& B,
+                       const Eigen::VectorXd& eta,
+                       Eigen::VectorXd& nu) = 0;
 };
 
 

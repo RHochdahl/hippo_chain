@@ -168,8 +168,10 @@ catkin_package(
 include_directories(
   include
   ${CMAKE_CURRENT_SOURCE_DIR}/src/
+  ${CMAKE_CURRENT_SOURCE_DIR}/lib/
   ${catkin_INCLUDE_DIRS}
   ${CMAKE_CURRENT_SOURCE_DIR}/..
+  /usr/local/MATLAB/R2022a/extern/include
 )
 
 
@@ -204,9 +206,12 @@ include_directories(
 # )
 
 file(GLOB_RECURSE SRC_FILES
-  LIST_DIRECTORIES TRUE
   RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/src"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+
+file(GLOB_RECURSE LIB_FILES
+  "${CMAKE_CURRENT_SOURCE_DIR}/lib/*.cpp"
 )
 
 # file(GLOB_RECURSE TEST_FILES
@@ -215,7 +220,7 @@ file(GLOB_RECURSE SRC_FILES
 
 foreach(SRC_FILE ${SRC_FILES})
   string(REPLACE ".cpp" "" NODE_NAME ${SRC_FILE})
-  add_executable(${PROJECT_NAME}_${NODE_NAME}_node ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_FILE})
+  add_executable(${PROJECT_NAME}_${NODE_NAME}_node ${CMAKE_CURRENT_SOURCE_DIR}/src/${SRC_FILE} ${LIB_FILES})
   add_dependencies(${PROJECT_NAME}_${NODE_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
   target_link_libraries(${PROJECT_NAME}_${NODE_NAME}_node ${catkin_LIBRARIES})
 endforeach(SRC_FILE ${SRC_FILES})

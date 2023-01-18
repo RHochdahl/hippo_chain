@@ -8,7 +8,7 @@ namespace po = boost::program_options;
 struct ControllerOptions
 {
     std::vector<std::string> vehicles;
-    double rate = 20.0;
+    double rate = std::numeric_limits<double>::quiet_NaN();
     bool autostart = false;
 };
 

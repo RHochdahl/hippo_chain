@@ -75,15 +75,15 @@ public:
         switch (axis)
         {
         case Axis::x:
-            zeta = omegaP.x-omegaC.x;
+            zeta = omegaC.x-omegaP.x;
             break;
 
         case Axis::y:
-            zeta = omegaP.y-omegaC.y;
+            zeta = omegaC.y-omegaP.y;
             break;
 
         case Axis::z:
-            zeta = omegaP.z-omegaC.z;
+            zeta = omegaC.z-omegaP.z;
             break;
 
         default:

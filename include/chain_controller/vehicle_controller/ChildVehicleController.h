@@ -99,9 +99,10 @@ public:
         controllerStates.sigma = controllerStates.zetaDes + param.kSigma * (controllerStates.thetaDes - jointModel.theta);  // FIXME: T*zeta + ...
         controllerStates.sigmaDot = param.kSigma * (controllerStates.zetaDes - jointModel.zeta);                            // FIXME: k*T*zeta_error
         debugger.addEntry("sigma", controllerStates.sigma);
-        debugger.addEntry("sigma dot", controllerStates.sigmaDot);
+        debugger.addEntry("d/dt sigma", controllerStates.sigmaDot);
 
         xiAbs = jointModel.transform(parent->getXiAbs()) + jointModel.xiRel;
+        debugger.addEntry("abs vel parent", jointModel.transform(parent->getXiAbs()));
         debugger.addEntry("abs vel", xiAbs);
 
         const Eigen::Vector6d betaTemp = jointModel.transform(parent->getBeta());
@@ -109,10 +110,11 @@ public:
         controllerStates.betaDot = jointModel.transform(parent->getBetaDot())
                                  + jointModel.mapAcceleration(controllerStates.sigmaDot, controllerStates.sigma)
                                  + shared::cross6(betaTemp, jointModel.xiRel);
+        debugger.addEntry("beta parent", betaTemp);
         debugger.addEntry("beta", controllerStates.beta);
-        debugger.addEntry("beta dot", controllerStates.betaDot);
+        debugger.addEntry("d/dt beta", controllerStates.betaDot);
 
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot);
+        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot, &debugger);
         debugger.addEntry("tau", tau);
     }
 

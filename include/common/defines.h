@@ -36,3 +36,6 @@ namespace hippo {\
     constexpr bool has_no_param_##x##_v() {return has_no_param_##x<T>::value;}\
 }
 #endif
+
+
+#define DEFAULT_RATE 200.0
