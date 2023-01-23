@@ -5,10 +5,24 @@
 
     <param name="dynamic_reconfigure_dir" value="$(find hippo_chain)/cfg/" />
 
-    <include ns="uuv0" file="$(arg base_file)" />
+    
+    <arg name="switch" default="true" />
 
-    <include ns="uuv1" file="$(arg child_file)" >
-        <arg name="ahead_of_parent" value="false" />
-        <arg name="parent" value="uuv00" />
-    </include>
+    <group unless="$(arg switch)" >
+        <include ns="uuv0" file="$(arg base_file)" />
+
+        <include ns="uuv1" file="$(arg child_file)" >
+            <arg name="ahead_of_parent" value="false" />
+            <arg name="parent" value="uuv0" />
+        </include>
+    </group>
+
+    <group if="$(arg switch)" >
+        <include ns="uuv1" file="$(arg base_file)" />
+
+        <include ns="uuv0" file="$(arg child_file)" >
+            <arg name="ahead_of_parent" value="true" />
+            <arg name="parent" value="uuv1" />
+        </include>
+    </group>
 </launch>

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="num_vehicles" default="2" />
+    <arg name="num_vehicles" default="3" />
 
     <include file="$(find hippo_chain)/config/controller/chain/chain_controller_$(arg num_vehicles).launch" />
 
@@ -8,7 +8,7 @@
         <arg name="num_vehicles" value="$(arg num_vehicles)" />
     </include>
 
-    <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" launch-prefix="gdb -ex run --args" />
-    <node pkg="hippo_chain" type="hippo_chain_estimator_node" name="hippo_chain_estimator_node" output="screen" launch-prefix="gdb -ex run --args" />
-    <node pkg="hippo_chain" type="hippo_chain_planner_node" name="hippo_chain_planner_node" output="screen" launch-prefix="gdb -ex run --args" />
+    <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" />
+    <node pkg="hippo_chain" type="hippo_chain_estimator_node" name="hippo_chain_estimator_node" output="screen" />
+    <node pkg="hippo_chain" type="hippo_chain_planner_node" name="hippo_chain_planner_node" output="screen" />
 </launch>

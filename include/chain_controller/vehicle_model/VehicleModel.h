@@ -13,6 +13,9 @@
 class VehicleModel
 {
 private:
+    double rigidMass;
+    Eigen::Vector3d rigidInertia;
+    Eigen::Vector6d addedMass;
     Eigen::Vector6d inertias;
     Eigen::Vector6d linDragCoeff;
     Eigen::Vector6d quadDragCoeff;
@@ -26,31 +29,31 @@ public:
 
         // don't use iterators as performance is irrelevant here
 
-        const double rigidMass = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_mass", 0);
+        rigidMass = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_mass", 0.0);
         for (int i=0; i<3; i++) {
-            inertias(i) = rigidMass + configProvider->getValuePositiveWithDefault(nsExtension + "added_mass/" + poseStr[i], 0);
+            addedMass(i) = rigidMass + configProvider->getValuePositiveWithDefault(nsExtension + "added_mass/" + poseStr[i], 0.0);
+            inertias(i) = rigidMass + addedMass(i);
         }
         for (int i=3; i<6; i++) {
-            inertias(i) = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_inertia/" + poseStr[i], 0)
-                        + configProvider->getValuePositiveWithDefault(nsExtension + "added_inertia/" + poseStr[i], 0);
+            rigidInertia(i-3) = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_inertia/" + poseStr[i], 0.0);
+            addedMass(i) = configProvider->getValuePositiveWithDefault(nsExtension + "added_inertia/" + poseStr[i], 0.0);
+            inertias(i) = rigidInertia(i-3) + addedMass(i);
         }
 
         for (int i=0; i<6; i++) {
-            linDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/linear/" + poseStr[i], 0);
-            quadDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/quadratic/" + poseStr[i], 0);
+            linDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/linear/" + poseStr[i], 0.0);
+            quadDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/quadratic/" + poseStr[i], 0.0);
         }
     }
 
     ~VehicleModel()
-    {
+    {}
 
-    }
 
-    template<typename Derived1,
-             typename Derived2>
-    Eigen::Vector6d calcWrenches(const Eigen::MatrixBase<Derived1>& absVel,
+    Eigen::Vector6d calcWrenches(const Eigen::Vector6d& absVel,
                                  const Eigen::Vector6d& beta,
-                                 const Eigen::MatrixBase<Derived2>& dbeta,
+                                 const Eigen::Vector6d& dbeta,
+                                 const double k=-1,
                                  Debugger* debugger=NULL) const
     {
         // zero net buoyancy is assumed
@@ -59,17 +62,25 @@ public:
 // #define USE_ACTUAL_VELOCITY
 #ifndef USE_ACTUAL_VELOCITY
         // coriolis wrenches
-        const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
-        if (debugger) debugger->addEntry("momentum", momentum);
-        result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(momentum.topRows<3>());
-        result.bottomRows<3>().noalias()    = beta.topRows<3>().cross(momentum.topRows<3>())
-                                            + beta.bottomRows<3>().cross(momentum.bottomRows<3>());
+        const Eigen::Vector6d addedMomentum = addedMass.cwiseProduct(absVel);
+        if (debugger) debugger->addEntry("added momentum", addedMomentum);
+        result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(addedMomentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = beta.bottomRows<3>().cross(addedMomentum.bottomRows<3>())
+                                            + beta.topRows<3>().cross(addedMomentum.topRows<3>());
+
+        result.topRows<3>().noalias()       += rigidMass * ((k+1) * absVel.bottomRows<3>().cross(beta.topRows<3>())
+                                                              + k * absVel.topRows<3>().cross(beta.bottomRows<3>()));
+                                                    
+        result.bottomRows<3>().noalias()    += k * rigidMass * absVel.topRows<3>().cross(beta.topRows<3>())
+                                             + beta.bottomRows<3>().cross(rigidInertia.cwiseProduct(absVel.bottomRows<3>()));
 
 #ifndef NDEBUG
-        if (debugger) debugger->addEntry("coriolis wrenches", result);
-        if (debugger) debugger->addEntry("inertial wrenches", inertias.cwiseProduct(dbeta));
-        if (debugger) debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(beta));
-        if (debugger) debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs()));
+        if (debugger) {
+            debugger->addEntry("coriolis wrenches", result);
+            debugger->addEntry("inertial wrenches", inertias.cwiseProduct(dbeta));
+            debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(beta));
+            debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs()));
+        }
 #endif  // NDEBUG
 
         // inertial wrenches
