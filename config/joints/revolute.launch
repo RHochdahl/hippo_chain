@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-    <param name="type" value="revolute" type="string" />
+    <param name="type"  value="revolute"    type="string" />
+    <param name="dof"   value="1"           type="int" />
 
     <arg name="ahead_of_parent" />
     <arg name="x_pos" default="0.275" />
