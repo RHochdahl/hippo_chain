@@ -19,6 +19,8 @@ private:
         double kP;
         double kSat;
         double lim;
+        double kCoriolis;
+        double maxAngularError;
     } param;
 
     struct ControllerStates {
@@ -35,9 +37,11 @@ private:
     {
         if (!(level & DynamicReconfigureLevels::CHILD)) return;
         param.kSigma = config.kSigma;
-        param.kP = config.kP;
-        param.kSat = config.kSat;
-        param.lim = config.lim;
+        param.kP = config.kP_child;
+        param.kSat = config.kSat_child;
+        param.lim = config.lim_child;
+        param.kCoriolis = config.kCoriolis;
+        param.maxAngularError = config.maxAngularError;
         ROS_INFO("Updated child controller parameters for '%s'", nh->getNamespace().c_str());
     }
 
@@ -96,12 +100,13 @@ public:
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
         debugger.addEntry("bounded desired pose", controllerStates.thetaDes);
         debugger.addEntry("bounded desired twist", controllerStates.zetaDes);
-        controllerStates.sigma = controllerStates.zetaDes + param.kSigma * (controllerStates.thetaDes - jointModel.theta);  // FIXME: T*zeta + ...
-        controllerStates.sigmaDot = param.kSigma * (controllerStates.zetaDes - jointModel.zeta);                            // FIXME: k*T*zeta_error
+        controllerStates.sigma = controllerStates.zetaDes + param.kSigma * limitError(controllerStates.thetaDes - jointModel.theta, param.maxAngularError); // FIXME: T*zeta + ...
+        controllerStates.sigmaDot = param.kSigma * (controllerStates.zetaDes - jointModel.zeta);                                                            // FIXME: k*T*zeta_error
         debugger.addEntry("sigma", controllerStates.sigma);
-        debugger.addEntry("sigma dot", controllerStates.sigmaDot);
+        debugger.addEntry("d/dt sigma", controllerStates.sigmaDot);
 
         xiAbs = jointModel.transform(parent->getXiAbs()) + jointModel.xiRel;
+        debugger.addEntry("abs vel parent", jointModel.transform(parent->getXiAbs()));
         debugger.addEntry("abs vel", xiAbs);
 
         const Eigen::Vector6d betaTemp = jointModel.transform(parent->getBeta());
@@ -109,16 +114,18 @@ public:
         controllerStates.betaDot = jointModel.transform(parent->getBetaDot())
                                  + jointModel.mapAcceleration(controllerStates.sigmaDot, controllerStates.sigma)
                                  + shared::cross6(betaTemp, jointModel.xiRel);
+        debugger.addEntry("beta parent", betaTemp);
         debugger.addEntry("beta", controllerStates.beta);
-        debugger.addEntry("beta dot", controllerStates.betaDot);
+        debugger.addEntry("d/dt beta", controllerStates.betaDot);
 
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot);
+        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot, param.kCoriolis, &debugger);
         debugger.addEntry("tau", tau);
     }
 
     void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx)
     {
         parent->setJointWrenches(jointModel.transposedTransform(tau));
+        debugger.addEntry("transformed tau", Eigen::Vector6d(jointModel.transposedTransform(tau)));
         const typename JointModel::JointVector s = controllerStates.sigma - jointModel.zeta;
         debugger.addEntry("s", s);
         if constexpr (std::is_same<typename JointModel::JointVector, double>::value) {

@@ -51,6 +51,25 @@ protected:
 
     virtual void updateControlParameters(const hippo_chain::VehicleControllerConfig& config, uint32_t level) = 0;
 
+    template<int Dim>
+    static inline Eigen::Matrix<double,Dim,1> limitError(const Eigen::Matrix<double,Dim,1>& error, const double maxError)
+    {
+        static_assert(Dim > 0);
+        Eigen::Matrix<double,Dim,1> result;
+        auto errorIt=error.data();
+        auto end=errorIt+Dim;
+        auto resultIt=result.data();
+        for (; errorIt<end; errorIt++, resultIt++) {
+            *resultIt = limitError(*errorIt, maxError);
+        }
+        return result;
+    }
+
+    static inline double limitError(const double error, const double maxError)
+    {
+        return (std::abs(error) > maxError) ? shared::sgn(error) * maxError : error;
+    }
+
 
 public:
     VehicleController(const std::string& name, const int id)
@@ -91,6 +110,7 @@ public:
     {
         debugger.addEntry("add to tau", jointWrench);
         tau.noalias() += jointWrench;
+        debugger.addEntry("new tau", tau);
     }
 
     const Eigen::Vector6d& getXiAbs() const
@@ -124,12 +144,14 @@ public:
         mavros_msgs::AttitudeTarget msg;
         msg.header.stamp = ros::Time::now();
         std::array<double, 4> thrusterCommands = thrusterModel.calcThrusterCommands(thrusterOutputs);
-        msg.body_rate.x = thrusterCommands[0];
-        msg.body_rate.y = thrusterCommands[1];
-        msg.body_rate.z = thrusterCommands[2];
-        msg.thrust      = thrusterCommands[3];
+        // negative signs needed because of mavros frame conversion frd <-> flu
+        msg.body_rate.x =  thrusterCommands[0];
+        msg.body_rate.y = -thrusterCommands[1];
+        msg.body_rate.z = -thrusterCommands[2];
+        msg.thrust      =  thrusterCommands[3];
         pub.publish(msg);
         debugger.addEntry("thrusters", thrusterCommands.data(), thrusterCommands.size());
+        debugger.addEntry("forces", thrusterModel.Psi*Eigen::Vector4d(thrusterOutputs));
         debugger.publish();
     }
 
