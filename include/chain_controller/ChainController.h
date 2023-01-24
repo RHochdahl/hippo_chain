@@ -4,6 +4,7 @@
 
 #include <utility>
 #include <memory>
+#include <ctime>
 #include <ros/ros.h>
 #include <hippo_chain/AddVehicles.h>
 #include <std_srvs/Empty.h>
@@ -13,6 +14,7 @@
 #include <hippo_chain/include/chain_controller/input_provider/InputProvider.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LeastSquaresSolver.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LQPSolver.h>
+#include <hippo_chain/include/chain_controller/least_squares_solver/MatlabLSQSolver.h>
 #include <hippo_chain/include/chain_controller/vehicle_controller/VehicleController.h>
 #include <hippo_chain/include/chain_controller/vehicle_controller/BaseVehicleController.h>
 #include <hippo_chain/include/chain_controller/vehicle_controller/ChildVehicleController.h>
@@ -196,7 +198,7 @@ private:
     {
         ros::Time startTime = ros::Time::now();
         if (modified) {
-            lsqSolver.reset(new LQPSolver(4*numVehicles));
+            lsqSolver.reset(new MatlabLSQSolver(4*numVehicles));
             inputProvider->reset();
             modified = false;
         }
@@ -252,7 +254,7 @@ public:
         
         addVehicles(vehicles);
 
-        lsqSolver.reset(new LQPSolver(4*numVehicles));
+        lsqSolver.reset(new MatlabLSQSolver(4*numVehicles));
         inputProvider.reset(new InputProvider(idMap));
 
         ROS_INFO("Constructed chain controller for %i vehicles", numVehicles);
@@ -275,7 +277,7 @@ public:
     , startSrv(nh->advertiseService("chain_controller/start", &ChainController::startCallback, this))
     , pauseSrv(nh->advertiseService("chain_controller/pause", &ChainController::pauseCallback, this))
     , addVehiclesSrv(nh->advertiseService("chain_controller/addVehicles", &ChainController::addVehiclesCallback, this))
-    , rate(rate)
+    , rate((std::isnan(rate) ? DEFAULT_RATE : rate))
     , idMap(new std::map<int, int>())
     , vehicleControllers(0)
     , numVehicles(0)
@@ -288,7 +290,7 @@ public:
         server.setCallback(f);
     }
 
-    ChainController() : ChainController(20.0) {}
+    ChainController() : ChainController(200.0) {}
 
     ~ChainController()
     {
@@ -300,7 +302,9 @@ public:
     void spin()
     {
         while (ros::ok()) {
+//            const clock_t begin_time = clock();
             ros::spinOnce();
+//            std::cout << "Spin: " << double(clock() - begin_time) * (1000.0/CLOCKS_PER_SEC) << " ms\n";
 
             if (!running) {
                 stopThrusters();    // continue to send zeros to remain armed
@@ -346,9 +350,12 @@ public:
                 }
             }
 
+//            std::cout << "Controller: " << double(clock() - begin_time) * (1000.0/CLOCKS_PER_SEC) << " ms\n";
+
             lsqSolver->solve(B, eta, nu);
             sendThrusterCommands(nu);
 
+//            std::cout << "All: " << double(clock() - begin_time) * (1000.0/CLOCKS_PER_SEC) << " ms\n";
             rate.sleep();
         }
     }

@@ -173,13 +173,13 @@ public:
     , statePub(nh->advertise<hippo_chain::ChainState>("chain/state", 1))
     , addVehiclesSrv(nh->advertiseService("chain_estimator/addVehicles", &ChainEstimator::addVehiclesCallback, this))
     , stopVehiclesSrv(nh->serviceClient<std_srvs::Empty>("chain_controller/pause"))
-    , rate(rate)
+    , rate((std::isnan(rate) ? DEFAULT_RATE : rate))
     , idMap(new std::map<int, int>())
     , vehicleEstimators(0)
     , numVehicles(0)
     {}
 
-    ChainEstimator() : ChainEstimator(20.0) {}
+    ChainEstimator() : ChainEstimator(200.0) {}
 
     ~ChainEstimator()
     {

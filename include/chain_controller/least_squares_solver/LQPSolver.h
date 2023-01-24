@@ -40,11 +40,12 @@ private:
     CGAL::Const_oneset_iterator<bool> bb;
     CGAL::Const_oneset_iterator<CGAL::Comparison_result> r;
 
+    CGAL::Quadratic_program_options options;
     Solution s;
 
 
 public:
-    LQPSolver(const int size)
+    LQPSolver(const int size, const int verbosity = 5)
     : LeastSquaresSolver(size)
     , Q(Eigen::MatrixXd::Zero(SIZE, SIZE))
     , q(Eigen::VectorXd::Zero(SIZE))
@@ -56,11 +57,15 @@ public:
     , ub(1)
     , bb(true)
     , r(CGAL::EQUAL)
+    , options()
     {
         D[0] = Q.data();
         for (int i=1; i<SIZE; i++) {
             D[i] = D[0] + i*SIZE;
         }
+#ifndef NDEBUG
+        options.set_verbosity(std::clamp(verbosity, 0, 5));
+#endif  // NDEBUG
     }
 
     ~LQPSolver()
@@ -69,18 +74,32 @@ public:
         delete[] D;
     }
 
-    void solve(const Eigen::Ref<const Eigen::MatrixXd>& B,
-               const Eigen::Ref<const Eigen::VectorXd>& eta,
-               Eigen::Ref<Eigen::VectorXd> nu)
+    void solve(const Eigen::MatrixXd& B,
+               const Eigen::VectorXd& eta,
+               Eigen::VectorXd& nu)
     {
         assert(B.rows() == eta.rows());
         assert(B.cols() == SIZE);
         assert(nu.rows() == SIZE);
 
+        const clock_t begin_time = clock();
+
+        debugger.addEntry("Size", SIZE);
+        debugger.addEntry("B", B);
+        debugger.addEntry("desired eta", eta);
+
         Q.noalias() = B.transpose() * B;
         q.noalias() = -B.transpose() * eta;
 
-        s = CGAL::solve_quadratic_program(CGAL::make_quadratic_program_from_iterators(SIZE, 0, A, b, r, bb, lb, bb, ub, D, c), ET());
+        debugger.addEntry("Q", Q);
+        debugger.addEntry("q", q);
+
+        if (q.squaredNorm() < 1e-9) {
+            nu.fill(0);
+            return;
+        }
+
+        s = CGAL::solve_quadratic_program(CGAL::make_quadratic_program_from_iterators(SIZE, 0, A, b, r, bb, lb, bb, ub, D, c), ET(), options);
         assert(s.variable_values_end() == s.variable_values_begin() + SIZE);
 
         {
@@ -90,6 +109,19 @@ public:
                 *sol_it = it->numerator().to_double() / it->denominator().to_double();
             }
         }
+
+#ifndef NDEBUG
+        double time = double(clock() - begin_time) * (1000.0/CLOCKS_PER_SEC);
+        auto etaActual = B*nu;
+        auto error = etaActual-eta;
+
+        debugger.addEntry("nu", nu);
+        debugger.addEntry("actual eta", etaActual);
+        debugger.addEntry("error", error);
+        debugger.addEntry("error norm", error.norm());
+        debugger.addEntry("Solve time (in ms)", time);
+        debugger.publish();
+#endif  // NDEBUG
     }
 };
 
