@@ -7,14 +7,14 @@
 
     <include ns="uuv0" file="$(arg child_file)" >
         <arg name="ahead_of_parent" value="true" />
-        <arg name="parent" value="uuv01" />
+        <arg name="parent" value="uuv1" />
     </include>
 
     <include ns="uuv1" file="$(arg base_file)" />
 
     <include ns="uuv2" file="$(arg child_file)" >
-        <arg name="ahead_of_parent" value="true" />
-        <arg name="parent" value="uuv01" />
+        <arg name="ahead_of_parent" value="false" />
+        <arg name="parent" value="uuv1" />
     </include>
 
 </launch>
