@@ -32,7 +32,7 @@ public:
     VehicleEstimator(const std::string& name)
     : PUBLIC_ID(shared::getID(name))
     , nh(new ros::NodeHandle(name))
-    , sub(nh->subscribe("ground_truth/state", 1, &VehicleEstimator::callback, this))
+    , sub(nh->subscribe("ground_truth/odom", 1, &VehicleEstimator::callback, this))
     , timer(nh->createTimer(ros::Duration(1), &VehicleEstimator::bark, this, true, false))
     , configProvider(new ConfigProvider(nh))
     , timedOut(true)
