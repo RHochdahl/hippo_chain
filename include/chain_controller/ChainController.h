@@ -2,15 +2,12 @@
 #define CHAINCONTROLLER_H
 
 
-#include <utility>
-#include <memory>
+#include <hippo_chain/include/common/ChainNodeTemplate.h>
+
 #include <ctime>
-#include <ros/ros.h>
-#include <hippo_chain/AddVehicles.h>
-#include <std_srvs/Empty.h>
+
 #include <hippo_chain/ChainControllerConfig.h>
 
-#include <hippo_chain/include/common/ConfigProvider.h>
 #include <hippo_chain/include/chain_controller/input_provider/InputProvider.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LeastSquaresSolver.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LQPSolver.h>
@@ -21,35 +18,20 @@
 #include <hippo_chain/include/chain_controller/vehicle_controller/ChildFactory.hpp>
 
 
-class ChainController
+class ChainController : public ChainNodeTemplate
 {
 private:
     bool running;
     bool modified;
-    std::shared_ptr<ros::NodeHandle> nh;
-    ConfigProvider configProvider;
+
     ros::ServiceServer startSrv;
     ros::ServiceServer pauseSrv;
-    ros::ServiceServer addVehiclesSrv;
-    ros::Rate rate;
-
-    std::shared_ptr<std::map<int, int>> idMap;
 
     std::vector<std::shared_ptr<VehicleController>> vehicleControllers;
     std::unique_ptr<InputProvider> inputProvider;
 
-    struct VehicleParam
-    {
-        std::string name;
-        int publicId;
-        int parentId;
-        std::string jointType;
-    };
-
-    int numVehicles;
     int totalDof;
 
-    std::vector<int> dofList;
     std::vector<int> startIdxList;
 
     Eigen::MatrixXd B;
@@ -62,7 +44,7 @@ private:
     dynamic_reconfigure::Server<hippo_chain::ChainControllerConfig>::CallbackType f;
 
 
-    bool addVehicle(std::shared_ptr<VehicleController> vehicle, const int publicId)
+    void addVehicle(std::shared_ptr<VehicleController> vehicle, const int publicId)
     {
         if (!idMap->insert(std::make_pair(publicId, numVehicles)).second) throw addition_error("Vehicle has already been added.");
         vehicleControllers.push_back(vehicle);
@@ -78,10 +60,10 @@ private:
 
         ROS_INFO("Added vehicle with ID %i to chain controller.", publicId);
 
-        return modified = true;
+        modified = true;
     }
 
-    bool addChildVehicle(const VehicleParam& param)
+    void addChildVehicle(const VehicleParam& param)
     {
         if (running)                        throw addition_error("Controller still running. Couldn't add vehicle.");
         if (param.publicId < 0)             throw addition_error("Vehicle has invalid ID! Couldn't add vehicle.");
@@ -91,7 +73,7 @@ private:
 
         try
         {
-            return addVehicle(ChildFactory::bearChild(vehicleControllers[idMap->at(param.parentId)], param.name, numVehicles, param.jointType), param.publicId);
+            addVehicle(ChildFactory::bearChild(vehicleControllers[idMap->at(param.parentId)], param.name, numVehicles, param.jointType), param.publicId);
         }
         catch(const std::invalid_argument& e)
         {
@@ -99,76 +81,14 @@ private:
         }
     }
 
-    bool addBaseVehicle(const VehicleParam& param)
+    void addBaseVehicle(const VehicleParam& param)
     {
         if (vehicleControllers.size())  throw addition_error("Base vehicle already exists!");
         if (idMap->size())              throw addition_error("Base vehicle already exists!");
         if (param.publicId < 0)         ROS_FATAL("Base vehicle has invalid ID!");
         if (param.parentId != -1)       ROS_FATAL("Base vehicle has incorrect parent ID!");
 
-        return addVehicle(std::make_shared<BaseVehicleController>(param.name), param.publicId);
-    }
-
-    void readVehicleParams(const std::string& name, VehicleParam& param) const
-    {
-        param.name = name;
-        param.publicId = shared::getID(param.name);
-        if (param.publicId < 0) ROS_FATAL("ID could not be read from '%s'!", param.name.c_str());
-        std::string parentName;
-        if (!configProvider.getValue(param.name + "/parent", parentName)) ROS_FATAL("Vehicle '%s' does not name a parent!", param.name.c_str());
-        if (parentName == "base") {
-            param.parentId = -1;
-        } else {
-            param.parentId = shared::getID(parentName);
-            if (param.parentId < 0) ROS_FATAL("ID could not be read from '%s'!", parentName.c_str());
-            if (!configProvider.getValue(param.name + "/joint/type", param.jointType)) ROS_FATAL("Vehicle '%s' does not specify 'joint/type'!", param.name.c_str());
-        }
-    }
-
-    bool addVehicles(const std::vector<std::string>& vehicles)
-    {
-        std::vector<VehicleParam> waitingList(0);
-
-        for (auto it=vehicles.begin(); it!=vehicles.end(); it++) {
-            VehicleParam param;
-            readVehicleParams(*it, param);
-            waitingList.push_back(param);
-        }
-
-        {
-            auto it=waitingList.begin();
-            while(it!=waitingList.end()) {
-                if (it->parentId == -1) {
-                    try
-                    {
-                        addBaseVehicle(*it);
-                    }
-                    catch(const std::exception& e) {}
-                    it = waitingList.erase(it);
-                } else it++;
-            }
-        }
-        if (!numVehicles) ROS_FATAL("No base vehicle could be constructed!");
-        {
-            auto it=waitingList.begin();
-            while(it!=waitingList.end()) {
-                if (idMap->count(it->parentId)) {
-                    try
-                    {
-                        addChildVehicle(*it);
-                    }
-                    catch(const std::exception& e) {}
-                    waitingList.erase(it);
-                    it=waitingList.begin();
-                } else it++;
-            }
-        }
-        
-        if (waitingList.size()) {
-            ROS_ERROR("Some vehicles could not be added to chain controller!");
-            return false;
-        }
-        return true;
+        addVehicle(std::make_shared<BaseVehicleController>(param.name), param.publicId);
     }
 
     void sendThrusterCommands(const Eigen::Ref<const Eigen::VectorXd>& thrusterOutputs)
@@ -189,6 +109,7 @@ private:
 
     void pause()
     {
+        if (!running) return;
         stopThrusters();
         running = false;
         ROS_WARN("Chain Controller paused!");
@@ -218,11 +139,6 @@ private:
         }
     }
 
-    bool addVehiclesCallback(hippo_chain::AddVehicles::Request& request, hippo_chain::AddVehicles::Response& response)
-    {
-        return addVehicles(request.vehicle_names);
-    }
-
     bool pauseCallback(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
     {
         pause();
@@ -245,23 +161,29 @@ private:
 
 public:
     ChainController(std::vector<std::string> vehicles, const bool autoStart, const double rate)
-    : ChainController(rate)
+    : ChainNodeTemplate("chain_controller", vehicles, rate)
+    , running(false)
+    , modified(true)
+    , startSrv(nh->advertiseService("chain_controller/start", &ChainController::startCallback, this))
+    , pauseSrv(nh->advertiseService("chain_controller/pause", &ChainController::pauseCallback, this))
+    , vehicleControllers(0)
+    , totalDof(0)
+    , startIdxList(0)
+    , server(ros::NodeHandle("ChainController"))
+    , f(boost::bind(&ChainController::reconfigureCallback, this, _1, _2))
     {
-        if (!vehicles.size()) {
-            vehicles = configProvider.getChainVehicleNames();
-            if (!vehicles.size()) ROS_FATAL("No vehicle names were given!");
-        }
-        
         addVehicles(vehicles);
 
         lsqSolver.reset(new MatlabLSQSolver(4*numVehicles));
         inputProvider.reset(new InputProvider(idMap));
 
-        ROS_INFO("Constructed chain controller for %i vehicles", numVehicles);
-
         nu = Eigen::VectorXd::Zero(4*numVehicles);
         B = Eigen::MatrixXd::Zero(totalDof, 4*numVehicles);
         eta = Eigen::VectorXd::Zero(totalDof);
+
+        server.setCallback(f);
+
+        ROS_INFO("Constructed chain controller for %i vehicles", numVehicles);
 
         if (autoStart) {
             ros::Duration(5.0).sleep();
@@ -269,28 +191,9 @@ public:
         }
     }
 
-    ChainController(const double rate)
-    : running(false)
-    , modified(true)
-    , nh(new ros::NodeHandle())
-    , configProvider(nh)
-    , startSrv(nh->advertiseService("chain_controller/start", &ChainController::startCallback, this))
-    , pauseSrv(nh->advertiseService("chain_controller/pause", &ChainController::pauseCallback, this))
-    , addVehiclesSrv(nh->advertiseService("chain_controller/addVehicles", &ChainController::addVehiclesCallback, this))
-    , rate((std::isnan(rate) ? DEFAULT_RATE : rate))
-    , idMap(new std::map<int, int>())
-    , vehicleControllers(0)
-    , numVehicles(0)
-    , totalDof(0)
-    , dofList(0)
-    , startIdxList(0)
-    , server(ros::NodeHandle("ChainController"))
-    , f(boost::bind(&ChainController::reconfigureCallback, this, _1, _2))
-    {
-        server.setCallback(f);
-    }
-
-    ChainController() : ChainController(200.0) {}
+    ChainController()
+    : ChainController(std::vector<std::string>(), false, std::numeric_limits<double>::quiet_NaN())
+    {}
 
     ~ChainController()
     {

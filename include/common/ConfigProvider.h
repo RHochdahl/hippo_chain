@@ -21,23 +21,6 @@ public:
     ~ConfigProvider()
     {}
 
-    std::vector<std::string> getChainVehicleNames()
-    {
-        std::vector<std::string> names(0);
-        
-        std::vector<std::string> keys;
-        if (nh->getParamNames(keys)) {
-            for (auto it=keys.begin(); it!=keys.end(); it++) {
-                std::size_t idx = it->find("/parent");
-                if (idx == std::string::npos) continue;
-                std::string base = it->substr(0, idx);
-                names.push_back(base.substr(base.find_last_of("/")+1));
-            }
-        }
-        
-        return names;
-    }
-
     template<typename T>
     bool getValue(const std::string& name, T& variable) const
     {
