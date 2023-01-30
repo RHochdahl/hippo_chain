@@ -72,7 +72,8 @@ protected:
                     {
                         addBaseVehicle(*it);
                     }
-                    catch(const std::exception& e) {}
+                    catch(const auto_print_error& e) {}
+                    catch(const std::exception& e) {ROS_FATAL("%s", e.what());}
                     it = waitingList.erase(it);
                 } else it++;
             }
@@ -86,7 +87,8 @@ protected:
                     {
                         addChildVehicle(*it);
                     }
-                    catch(const std::exception& e) {}
+                    catch(const auto_print_error& e) {}
+                    catch(const std::exception& e) {ROS_FATAL("%s", e.what());}
                     waitingList.erase(it);
                     it=waitingList.begin();
                 } else it++;
