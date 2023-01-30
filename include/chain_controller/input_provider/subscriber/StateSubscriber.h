@@ -15,7 +15,7 @@ protected:
 public:
     StateSubscriber(ros::NodeHandle& nh, const std::shared_ptr<std::map<int, int>> idMap)
     : Subscriber(nh, "state", idMap)
-    , timer(nh.createTimer(ros::Duration(1), &StateSubscriber::bark, this, true, false))
+    , timer(nh.createTimer(ros::Rate(5.0), &StateSubscriber::bark, this, true, false))
     , timedOut(true)
     {}
 

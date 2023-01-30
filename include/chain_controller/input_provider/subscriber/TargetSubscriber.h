@@ -13,7 +13,7 @@ protected:
 public:
     TargetSubscriber(ros::NodeHandle& nh, const std::shared_ptr<std::map<int, int>> idMap)
     : Subscriber(nh, "target", idMap)
-    , timer(nh.createTimer(ros::Duration(1), &TargetSubscriber::bark, this, true, false))
+    , timer(nh.createTimer(ros::Rate(1.0), &TargetSubscriber::bark, this, true, false))
     {}
 
     void callback(const hippo_chain::ChainState& msg)
