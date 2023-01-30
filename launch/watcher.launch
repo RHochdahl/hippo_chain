@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <include ns="bounds" file="$(find hippo_chain)/config/environment/tank.launch" pass_all_args="true"/>
+
+    <node pkg="hippo_chain" type="hippo_chain_watcher_node" name="hippo_chain_watcher_node" output="screen" launch-prefix="gdb -ex run --args" args="" required="true" />
+</launch>
