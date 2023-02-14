@@ -11,6 +11,9 @@
 #include <hippo_chain/include/common/Debugger.h>
 
 
+#define USE_MODEL
+#define USE_ORIGINAL_DESIGN
+// #define USE_ACTUAL_VELOCITY
 // #define USE_RIGID_MASS_FACTOR
 
 
@@ -70,6 +73,22 @@ public:
 
         Eigen::Vector6d result;
 
+#ifdef USE_MODEL
+#ifdef USE_ORIGINAL_DESIGN
+
+        // coriolis wrenches
+        const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
+
+        result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(momentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = beta.bottomRows<3>().cross(momentum.bottomRows<3>())
+                                            + beta.topRows<3>().cross(momentum.topRows<3>());
+
+        // drag wrenches
+        result.noalias() += linDragCoeff.cwiseProduct(beta);
+        result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
+
+#else  // USE_ORIGINAL_DESIGN
+#ifndef USE_ACTUAL_VELOCITY
         // coriolis wrenches
         const Eigen::Vector3d addedLinearMomentum = addedMass.cwiseProduct(absVel.topRows<3>());
         const Eigen::Vector3d angularMomentum = inertia.cwiseProduct(absVel.bottomRows<3>());
@@ -96,14 +115,33 @@ public:
         }
 #endif  // NDEBUG
 
-        // inertial wrenches
-        result.noalias() += inertias.cwiseProduct(dbeta);
-
         // drag wrenches
         result.noalias() += linDragCoeff.cwiseProduct(beta);
         result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
 
-//        result.setZero();
+#else  // USE_ACTUAL_VELOCITY
+
+        // coriolis wrenches
+        const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
+
+        result.topRows<3>().noalias()       = absVel.bottomRows<3>().cross(momentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = absVel.bottomRows<3>().cross(momentum.bottomRows<3>())
+                                            + absVel.topRows<3>().cross(momentum.topRows<3>());
+
+        // drag wrenches
+        result.noalias() += linDragCoeff.cwiseProduct(absVel);
+        result.noalias() += quadDragCoeff.cwiseProduct(absVel).cwiseProduct(absVel.cwiseAbs());
+
+#endif  // USE_ACTUAL_VELOCITY
+#endif  // USE_ORIGINAL_DESIGN
+
+        // inertial wrenches
+        result.noalias() += inertias.cwiseProduct(dbeta);
+
+#else  // USE_MODEL
+        result.setZero();
+#endif  // USE_MODEL
+
         return result;
     }
 };
