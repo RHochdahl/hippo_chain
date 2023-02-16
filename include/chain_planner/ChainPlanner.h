@@ -8,6 +8,8 @@
 #include <hippo_chain/ChainTargetConfig.h>
 #include <hippo_chain/ChainState.h>
 
+#include "VisualPose.h"
+
 
 class ChainPlanner : public ChainNodeTemplate
 {
@@ -20,6 +22,7 @@ private:
     dynamic_reconfigure::Server<hippo_chain::ChainTargetConfig>::CallbackType f;
 
     hippo_chain::ChainState msg;
+    std::vector<std::shared_ptr<VisualPose>> visuals;
 
 
     void addVehicle(const VehicleParam& param)
@@ -38,6 +41,7 @@ private:
         if (idMap->count(param.publicId))   throw addition_error("Vehicle has already been added.");
 
         addVehicle(param);
+        visuals.push_back(std::make_shared<VisualPose>(param.name, param.jointPos, visuals[idMap->at(param.parentId)]));
     }
 
     void addBaseVehicle(const VehicleParam& param)
@@ -48,6 +52,7 @@ private:
         if (param.parentId != -1)       ROS_FATAL("Base vehicle has incorrect parent ID!");
 
         addVehicle(param);
+        visuals.push_back(std::make_shared<VisualPose>(param.name));
     }
 
     void reconfigureCallback(hippo_chain::ChainTargetConfig &config, uint32_t level)
@@ -58,9 +63,10 @@ private:
         // base
         hippo_chain::ChainVehicleState baseState;
         baseState.vehicle_id = idMap->at(0);
-        double halfYaw = config.yaw / 2;
+        const double halfYaw = config.yaw / 2;
         baseState.pose = {config.x, config.y, config.z, std::cos(halfYaw), 0, 0, std::sin(halfYaw)};
         baseState.twist = std::vector<double>(6, 0);
+        visuals.front()->set(baseState.pose);
         msg.data.push_back(baseState);
 
         for (int i=1; i<numVehicles; i++) {
@@ -70,6 +76,7 @@ private:
             childState.pose.front() = -config.form * jointPosSignList[i] * 2 * M_PI / std::max(numVehicles, 3);
             for (auto it=childState.pose.begin()+1, end=childState.pose.end(); it<end; it++) *it = 0;
             childState.twist = std::vector<double>(dofList[i], 0);
+            visuals[i]->set(childState.pose);
             msg.data.push_back(childState);
         }
         config.update = false;
@@ -79,6 +86,10 @@ private:
     {
         msg.header.stamp = ros::Time::now();
         targetPub.publish(msg);
+
+        for (auto it=visuals.begin(); it!=visuals.end(); it++) {
+            (*it)->publish();
+        }
     }
     
 
@@ -89,6 +100,7 @@ public:
     , jointPosSignList()
     , server(ros::NodeHandle("ChainPlanner"))
     , f(boost::bind(&ChainPlanner::reconfigureCallback, this, _1, _2))
+    , visuals()
     {
         addVehicles(vehicles);
         server.setCallback(f);
