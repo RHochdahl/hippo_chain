@@ -94,11 +94,11 @@ private:
             break;
 
         case Axis::y:
-            Phi << 0, 0, -jointPosX, 0, 1, 0;
+            Phi << 0, 0, jointPosX, 0, 1, 0;
             break;
 
         case Axis::z:
-            Phi << 0, jointPosX, 0, 0, 0, 1;
+            Phi << 0, -jointPosX, 0, 0, 0, 1;
             break;
 
         default:
