@@ -14,7 +14,6 @@
 #define USE_MODEL
 #define USE_ORIGINAL_DESIGN
 // #define USE_ACTUAL_VELOCITY
-// #define USE_RIGID_MASS_FACTOR
 
 
 class VehicleModel
@@ -42,12 +41,6 @@ public:
             inertias(i) = rigidMass + addedMass(i);
         }
 
-#ifndef USE_RIGID_MASS_FACTOR
-        const double maxAddedMass = addedMass.topRows<3>().maxCoeff();
-        addedMass.topRows<3>() -= maxAddedMass * Eigen::Vector3d::Ones();
-        rigidMass -= maxAddedMass;
-#endif  // USE_RIGID_MASS_FACTOR
-
         for (int i=3; i<6; i++) {
             inertias(i) = inertia(i-3) = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_inertia/" + poseStr[i], 0.0)
                                        + configProvider->getValuePositiveWithDefault(nsExtension + "added_inertia/" + poseStr[i], 0.0);
@@ -66,7 +59,6 @@ public:
     Eigen::Vector6d calcWrenches(const Eigen::Vector6d& absVel,
                                  const Eigen::Vector6d& beta,
                                  const Eigen::Vector6d& dbeta,
-                                 const double k=-1,
                                  Debugger* debugger=NULL) const
     {
         // zero net buoyancy is assumed
@@ -83,6 +75,15 @@ public:
         result.bottomRows<3>().noalias()    = beta.bottomRows<3>().cross(momentum.bottomRows<3>())
                                             + beta.topRows<3>().cross(momentum.topRows<3>());
 
+#ifndef NDEBUG
+        if (debugger) {
+            debugger->addEntry("coriolis wrenches", result);
+            debugger->addEntry("inertial wrenches", inertias.cwiseProduct(dbeta));
+            debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(beta));
+            debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs()));
+        }
+#endif  // NDEBUG
+
         // drag wrenches
         result.noalias() += linDragCoeff.cwiseProduct(beta);
         result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
@@ -94,17 +95,9 @@ public:
         const Eigen::Vector3d angularMomentum = inertia.cwiseProduct(absVel.bottomRows<3>());
 
         result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(addedLinearMomentum);
+                                            + rigidMass * absVel.bottomRows<3>().cross(beta.topRows<3>());
         result.bottomRows<3>().noalias()    = beta.bottomRows<3>().cross(angularMomentum)
                                             + beta.topRows<3>().cross(addedLinearMomentum);
-
-#ifdef USE_RIGID_MASS_FACTOR
-        result.topRows<3>().noalias()       += rigidMass * ((k+1) * absVel.bottomRows<3>().cross(beta.topRows<3>())
-                                                              + k * absVel.topRows<3>().cross(beta.bottomRows<3>()));
-        result.bottomRows<3>().noalias()    += k * rigidMass * absVel.topRows<3>().cross(beta.topRows<3>());
-
-#else  // USE_RIGID_MASS_FACTOR
-        result.topRows<3>().noalias()       += rigidMass * absVel.bottomRows<3>().cross(beta.topRows<3>());
-#endif  // USE_RIGID_MASS_FACTOR
 
 #ifndef NDEBUG
         if (debugger) {

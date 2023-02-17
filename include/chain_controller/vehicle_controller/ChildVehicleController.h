@@ -19,7 +19,6 @@ private:
         double kP;
         double kSat;
         double lim;
-        double kCoriolis;
         double maxAngularError;
     } param;
 
@@ -37,10 +36,9 @@ private:
     {
         if (!(level & DynamicReconfigureLevels::CHILD)) return;
         param.kSigma = config.kSigma;
-        param.kP = config.kP_child;
-        param.kSat = config.kSat_child;
-        param.lim = config.lim_child;
-        param.kCoriolis = config.kCoriolis;
+        param.kP = config.kP;
+        param.kSat = config.kSat;
+        param.lim = config.lim;
         param.maxAngularError = config.maxAngularError;
         ROS_INFO("Updated child controller parameters for '%s'", nh->getNamespace().c_str());
     }
@@ -118,7 +116,7 @@ public:
         debugger.addEntry("beta", controllerStates.beta);
         debugger.addEntry("d/dt beta", controllerStates.betaDot);
 
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot, param.kCoriolis, &debugger);
+        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot, &debugger);
         debugger.addEntry("tau", tau);
     }
 

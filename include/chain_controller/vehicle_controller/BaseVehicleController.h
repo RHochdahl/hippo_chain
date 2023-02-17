@@ -14,7 +14,6 @@ private:
         double kP;
         double kSat;
         double lim;
-        double kCoriolis;
         double maxPositionError;
         double maxQuaternionError;
     } param;
@@ -34,10 +33,9 @@ private:
         if (!(level & DynamicReconfigureLevels::BASE)) return;
         param.kSigma1 = config.kSigma1;
         param.kSigma2 = config.kSigma2;
-        param.kP = config.kP_base;
-        param.kSat = config.kSat_base;
-        param.lim = config.lim_base;
-        param.kCoriolis = config.kCoriolis;
+        param.kP = config.kP;
+        param.kSat = config.kSat;
+        param.lim = config.lim;
         param.maxPositionError = config.maxPositionError;
         param.maxQuaternionError = config.maxQuaternionError;
         ROS_INFO("Updated base controller parameters for '%s'", nh->getNamespace().c_str());
@@ -137,7 +135,7 @@ public:
         if (desiredState == NULL) throw auto_print_error("Desired state is not initialized!");
 
         calcSigma(desiredState);
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot, param.kCoriolis, &debugger);
+        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot, &debugger);
         debugger.addEntry("tau", tau);
     }
 
