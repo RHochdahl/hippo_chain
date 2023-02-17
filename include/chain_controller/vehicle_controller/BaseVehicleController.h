@@ -5,6 +5,9 @@
 #include "VehicleController.h"
 
 
+#define IGNORE_Z_ERROR
+
+
 class BaseVehicleController : public VehicleController
 {
 private:
@@ -80,7 +83,7 @@ private:
         controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
         debugger.addEntry("sigma/beta", controllerStates.sigma);
 
-        // Assumption: des twist in world frame, actual twist in base frame
+        // Requirement: des twist in world frame, actual twist in base frame
         const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
         const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows<3>();
         const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(omegaErr);   // _2 because the factor 0.5 is applied later
@@ -95,6 +98,10 @@ private:
         controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
         controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * param.kSigma2 * epsilonErrDot_2;
         debugger.addEntry("d/dt sigma/beta", controllerStates.sigmaDot);
+
+#ifdef IGNORE_Z_ERROR
+        controllerStates.sigma(2) = controllerStates.sigmaDot(2) = 0.0;
+#endif  // IGNORE_Z_ERROR
     }
 
 
