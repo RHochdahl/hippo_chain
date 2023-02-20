@@ -3,6 +3,7 @@
 
 
 #include "VehicleController.h"
+#include <hippo_chain/FixBase.h>
 
 
 #define IGNORE_Z_ERROR
@@ -30,6 +31,8 @@ private:
 
     Eigen::Vector7d poseAbs;
 
+    bool fixed;
+
 
     void updateControlParameters(const hippo_chain::VehicleControllerConfig &config, uint32_t level)
     {
@@ -51,6 +54,12 @@ private:
      */
     void calcSigma(const std::shared_ptr<StateProvider> desiredState)
     {
+        if (fixed) {
+            controllerStates.sigma.fill(0);
+            controllerStates.sigmaDot.fill(0);
+            return;
+        }
+
         controllerStates.desiredPose = desiredState->getPose<Eigen::Vector7d>();
         controllerStates.desiredTwist = desiredState->getTwist<Eigen::Vector6d>();
         debugger.addEntry("desired pose", desiredState->pose.data(), desiredState->pose.size());
@@ -108,6 +117,7 @@ private:
 public:
     BaseVehicleController(const std::string& name)
     : VehicleController(name, 0)
+    , fixed(false)
     {
         VehicleController* base = static_cast<VehicleController*>(this);
         base->dynamicReconfigureManager->initCallback(base);
@@ -117,6 +127,14 @@ public:
     ~BaseVehicleController()
     {}
 
+
+    bool fix(bool _fixed)
+    {
+        if (_fixed && !fixed) ROS_WARN("Fixing Base vehicle '%s'. The vehicle should be physically fixed!", nh->getNamespace().c_str());
+        fixed = _fixed;
+        return true;
+    }
+
     /**
      * @brief update state vector
      * 
@@ -125,6 +143,11 @@ public:
     void updateVehicleState(const std::shared_ptr<StateProvider> newState)
     {
         if (newState == NULL) throw auto_print_error("New state is not initialized!");
+
+        if (fixed) {
+            xiAbs.fill(0);
+            return;
+        }
 
         poseAbs = newState->getPose<Eigen::Vector7d>();
         xiAbs = newState->getTwist<Eigen::Vector6d>();
@@ -149,7 +172,11 @@ public:
     void calcB(Eigen::Ref<Eigen::Matrix<double, Eigen::Dynamic, 4>> B,
                const std::vector<int>& idxList) const
     {
-       B.topRows<6>() = thrusterModel.Psi;
+        if (fixed) {
+            B.topRows<6>().fill(0.0);
+        } else {
+            B.topRows<6>() = thrusterModel.Psi;
+        }
     }
 
     /**
@@ -167,6 +194,11 @@ public:
 
     void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx)
     {
+        if (fixed) {
+            eta.topRows<6>().fill(0);
+            return;
+        }
+
         const Eigen::Vector6d s = controllerStates.sigma - xiAbs;
         debugger.addEntry("s", s);
         eta.topRows<6>() = tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);

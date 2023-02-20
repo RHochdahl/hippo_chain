@@ -26,6 +26,7 @@ private:
 
     ros::ServiceServer startSrv;
     ros::ServiceServer pauseSrv;
+    ros::ServiceServer fixBaseSrv;
 
     std::vector<std::shared_ptr<VehicleController>> vehicleControllers;
     std::unique_ptr<InputProvider> inputProvider;
@@ -151,11 +152,23 @@ private:
         return running;
     }
 
+    bool fixBaseCallback(hippo_chain::FixBase::Request& req, hippo_chain::FixBase::Response& res)
+    {
+        if (!numVehicles) return false;
+
+        reinterpret_cast<BaseVehicleController*>(vehicleControllers.front().get())->fix(req.fix);
+        return true;
+    }
+
     void reconfigureCallback(hippo_chain::ChainControllerConfig &config, uint32_t level)
     {
         if (config.run && !running) start();
         else if (!config.run && running) pause();
         config.run = running;
+
+        if (numVehicles) {
+            reinterpret_cast<BaseVehicleController*>(vehicleControllers.front().get())->fix(config.fixBase);
+        }
     }
     
 
@@ -166,6 +179,7 @@ public:
     , modified(true)
     , startSrv(nh->advertiseService("chain_controller/start", &ChainController::startCallback, this))
     , pauseSrv(nh->advertiseService("chain_controller/pause", &ChainController::pauseCallback, this))
+    , fixBaseSrv(nh->advertiseService("chain_controller/fixBase", &ChainController::fixBaseCallback, this))
     , vehicleControllers(0)
     , totalDof(0)
     , startIdxList(0)
