@@ -39,6 +39,7 @@ public:
     {
         jointModel.updateCoordinates(absPose, parent->getAbsPose());
         jointModel.updateVelocities(absTwist, parent->getAbsTwist());
+        jointModel.executeFilter();
     }
 };
 

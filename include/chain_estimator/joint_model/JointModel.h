@@ -38,6 +38,8 @@ public:
     }
 
 
+    virtual void executeFilter() = 0;
+
     virtual void updateCoordinates(const geometry_msgs::PoseWithCovariance& childPose,
                                    const geometry_msgs::PoseWithCovariance& parentPose) = 0;
 
