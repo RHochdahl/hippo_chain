@@ -8,7 +8,11 @@
 #include <hippo_chain/ChainTargetConfig.h>
 #include <hippo_chain/ChainState.h>
 
+#include <hippo_chain/FixBase.h>
+
 #include "VisualPose.h"
+#include "periodic_modes/PeriodicMode.h"
+#include "periodic_modes/PeriodicReconfigurationMode.h"
 
 
 class ChainPlanner : public ChainNodeTemplate
@@ -23,6 +27,13 @@ private:
 
     hippo_chain::ChainState msg;
     std::vector<std::shared_ptr<VisualPose>> visuals;
+
+    int mode;
+
+    std::unique_ptr<PeriodicMode> periodicMode;
+
+
+#define NEUTRAL_POSE 0.85, 1.7, -0.5, M_PI_2
 
 
     void addVehicle(const VehicleParam& param)
@@ -58,32 +69,97 @@ private:
     void reconfigureCallback(hippo_chain::ChainTargetConfig &config, uint32_t level)
     {
         if (!config.update) return;
-        msg.data.clear();
 
-        // base
+        bool reset = false;
+        if (config.setMode) {
+            if (config.mode != mode) reset = true;
+            mode = config.mode;
+        }
+
+        switch (mode)
+        {
+        case 0:     // manual mode
+            setModeManual(config, reset);
+            break;
+
+        case 1:     // joint angle
+            ROS_INFO("Planner Mode: 'JointAngle'");
+            setModeJointAngle(config, reset);
+            break;
+
+        case 2:     // triangle
+            ROS_INFO("Planner Mode: 'MoveTriangle'");
+            setModeMoveTriangle(config, reset);
+            break;
+
+        default:
+            ROS_ERROR("Unexpected mode chosen!");
+            periodicMode.release();
+            break;
+        }
+
+        config.mode = mode;
+        config.setMode = false;
+        config.update = false;
+    }
+
+    void setModeManual(hippo_chain::ChainTargetConfig &config, const bool reset)
+    {
+        if (reset){
+            periodicMode.reset();
+        }
+
+        setBaseState(config.x, config.y, config.z, config.yaw);
+        setChildStates(config.form);
+    }
+
+    void setModeJointAngle(hippo_chain::ChainTargetConfig &config, const bool reset)
+    {
+        if (reset){
+            setBaseState(NEUTRAL_POSE);
+            periodicMode.reset(new PeriodicReconfigurationMode(config.Period, config.Duration, boost::bind(&ChainPlanner::setChildStates, this, _1)));
+            periodicMode->start(5.0);
+        }
+    }
+
+    void setModeMoveTriangle(hippo_chain::ChainTargetConfig &config, const bool reset)
+    {
+        if (reset){
+            setChildStates(1.0);
+            periodicMode.reset();
+        }
+
+        setBaseState(config.x, config.y, config.z, config.yaw);
+    }
+
+    void setBaseState(const double x, const double y, const double z, const double yaw)
+    {
         hippo_chain::ChainVehicleState baseState;
         baseState.vehicle_id = idMap->at(0);
-        const double halfYaw = config.yaw / 2;
-        baseState.pose = {config.x, config.y, config.z, std::cos(halfYaw), 0, 0, std::sin(halfYaw)};
+        const double halfYaw = yaw / 2;
+        baseState.pose = {x, y, z, std::cos(halfYaw), 0, 0, std::sin(halfYaw)};
         baseState.twist = std::vector<double>(6, 0);
         visuals.front()->set(baseState.pose);
-        msg.data.push_back(baseState);
+        msg.data.front() = baseState;
+    }
 
+    void setChildStates(const double form)
+    {
         for (int i=1; i<numVehicles; i++) {
             hippo_chain::ChainVehicleState childState;
             childState.vehicle_id = idMap->at(i);
             childState.pose = std::vector<double>(dofList[i]);
-            childState.pose.front() = -config.form * jointPosSignList[i] * 2 * M_PI / std::max(numVehicles, 3);
+            childState.pose.front() = -form * jointPosSignList[i] * 2 * M_PI / std::max(numVehicles, 3);
             for (auto it=childState.pose.begin()+1, end=childState.pose.end(); it<end; it++) *it = 0;
             childState.twist = std::vector<double>(dofList[i], 0);
             visuals[i]->set(childState.pose);
-            msg.data.push_back(childState);
+            msg.data[i] = childState;
         }
-        config.update = false;
     }
 
     void publish()
     {
+        assert(msg.data.size() == numVehicles);
         msg.header.stamp = ros::Time::now();
         targetPub.publish(msg);
 
@@ -100,9 +176,14 @@ public:
     , jointPosSignList()
     , server(ros::NodeHandle("ChainPlanner"))
     , f(boost::bind(&ChainPlanner::reconfigureCallback, this, _1, _2))
+    , msg()
     , visuals()
+    , mode(0)
     {
         addVehicles(vehicles);
+        msg.data.resize(numVehicles);
+        setBaseState(NEUTRAL_POSE);
+        setChildStates(0.0);
         server.setCallback(f);
         ROS_INFO("Constructed chain planner for %i vehicles", numVehicles);
     }
