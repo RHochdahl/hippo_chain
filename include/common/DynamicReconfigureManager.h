@@ -9,6 +9,8 @@
 
 #include <hippo_chain/include/common/defines.h>
 
+#include <fstream>
+
 
 
 DEFINE_HAS_PARAM(update)
