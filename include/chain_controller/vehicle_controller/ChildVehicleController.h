@@ -98,8 +98,8 @@ public:
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
         debugger.addEntry("bounded desired pose", controllerStates.thetaDes);
         debugger.addEntry("bounded desired twist", controllerStates.zetaDes);
-        controllerStates.sigma = controllerStates.zetaDes + param.kSigma * limitError(controllerStates.thetaDes - jointModel.theta, param.maxAngularError); // FIXME: T*zeta + ...
-        controllerStates.sigmaDot = param.kSigma * (controllerStates.zetaDes - jointModel.zeta);                                                            // FIXME: k*T*zeta_error
+        controllerStates.sigma = jointModel.mapDerivative(controllerStates.zetaDes) + param.kSigma * limitError(controllerStates.thetaDes - jointModel.theta, param.maxAngularError);
+        controllerStates.sigmaDot = param.kSigma * jointModel.mapDerivative(controllerStates.zetaDes - jointModel.zeta);
         debugger.addEntry("sigma", controllerStates.sigma);
         debugger.addEntry("d/dt sigma", controllerStates.sigmaDot);
 

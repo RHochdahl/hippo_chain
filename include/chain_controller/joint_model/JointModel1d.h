@@ -14,21 +14,15 @@ protected:
     virtual void calcTheta() = 0;
 
 public:
-    // must be above update()
+    auto mapDerivative(const double velocity) const
+    {
+        return velocity;
+    }
+
     auto mapVelocity(const double velocity) const
     {
         return Phi * velocity;
     }
-
-    void update(const std::shared_ptr<StateProvider> newState)
-    {
-        theta = newState->getPose<JointVector>();
-        zeta = newState->getTwist<JointVector>();
-        calcA();
-        xiRel = mapVelocity(zeta);
-        if (!bounds->checkBounds(theta, zeta)) ROS_WARN_THROTTLE(5.0, "Joint out of bounds!");
-    }
-
 
     auto mapAcceleration(const double acceleration) const
     {
@@ -38,6 +32,16 @@ public:
     auto mapAcceleration(const double acceleration, const double velocity) const
     {
         return mapAcceleration(acceleration);
+    }
+
+
+    void update(const std::shared_ptr<StateProvider> newState)
+    {
+        theta = newState->getPose<JointVector>();
+        zeta = newState->getTwist<JointVector>();
+        calcA();
+        xiRel = mapVelocity(zeta);
+        if (!bounds->checkBounds(theta, zeta)) ROS_WARN_THROTTLE(5.0, "Joint out of bounds!");
     }
 };
 

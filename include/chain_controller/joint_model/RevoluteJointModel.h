@@ -112,6 +112,12 @@ private:
         Theta.fill(0);
     }
 
+    void calcT()
+    {
+        T = 1.0;
+    }
+
+
 public:
     static constexpr const char* jointTypeName = "revolute";
 
@@ -131,6 +137,7 @@ public:
         initA();
         calcPhi();
         calcTheta();
+        calcT();
     }
 
     ~RevoluteJointModel()
