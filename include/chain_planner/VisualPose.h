@@ -3,7 +3,7 @@
 
 
 #include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 
 
 class VisualPose
@@ -12,7 +12,7 @@ private:
     ros::NodeHandle nh;
     ros::Publisher pub;
 
-    geometry_msgs::Pose pose;
+    geometry_msgs::PoseStamped pose;
 
     std::shared_ptr<VisualPose> parent;
 
@@ -24,29 +24,31 @@ public:
 
     VisualPose(const std::string& ns, const double jointPos=std::nan("base"), std::shared_ptr<VisualPose> parent=nullptr)
     : nh(ns)
-    , pub(nh.advertise<geometry_msgs::Pose>("target_pose", 1, true))
+    , pub(nh.advertise<geometry_msgs::PoseStamped>("target_pose", 1, true))
     , pose()
     , parent(parent)
     , jointPos(jointPos)
     {
-        pose.orientation.w = 1.0;
+        pose.header.frame_id = "map";
+        pose.pose.orientation.w = 1.0;
     }
 
     ~VisualPose() = default;
 
     void publish()
     {
+        pose.header.stamp = ros::Time::now();
         pub.publish(pose);
     }
 
     const geometry_msgs::Pose& get() const
     {
-        return pose;
+        return pose.pose;
     }
 
     void set(const geometry_msgs::Pose& _pose)
     {
-        pose = _pose;
+        pose.pose = _pose;
     }
 
     void set(const std::vector<double>& _pose)
@@ -54,13 +56,13 @@ public:
         if (_pose.size() == 7 && parent == nullptr) {
             assert(std::abs(_pose[4]) < 1e-12);
             assert(std::abs(_pose[5]) < 1e-12);
-            pose.position.x = _pose[0];
-            pose.position.y = _pose[1];
-            pose.position.z = _pose[2];
-            pose.orientation.w = _pose[3];
-            pose.orientation.x = _pose[4];
-            pose.orientation.y = _pose[5];
-            pose.orientation.z = _pose[6];
+            pose.pose.position.x = _pose[0];
+            pose.pose.position.y = _pose[1];
+            pose.pose.position.z = _pose[2];
+            pose.pose.orientation.w = _pose[3];
+            pose.pose.orientation.x = _pose[4];
+            pose.pose.orientation.y = _pose[5];
+            pose.pose.orientation.z = _pose[6];
         } else if (parent != nullptr) {
             auto parentPose = parent->get();
             assert(std::abs(parentPose.orientation.x) < 1e-12);
@@ -70,18 +72,18 @@ public:
             const double halfAngle = 0.5*angle;
             const double halfSin = std::sin(halfAngle);
             const double halfCos = std::cos(halfAngle);
-            pose.orientation.w = parentPose.orientation.w*halfCos - parentPose.orientation.z*halfSin;
-            pose.orientation.x = 0;
-            pose.orientation.y = 0;
-            pose.orientation.z = parentPose.orientation.z*halfCos + parentPose.orientation.w*halfSin;
+            pose.pose.orientation.w = parentPose.orientation.w*halfCos - parentPose.orientation.z*halfSin;
+            pose.pose.orientation.x = 0;
+            pose.pose.orientation.y = 0;
+            pose.pose.orientation.z = parentPose.orientation.z*halfCos + parentPose.orientation.w*halfSin;
             const double delX = -jointPos * (1+std::cos(angle));
             const double delY = -jointPos * std::sin(angle);
             const double qwqw = parentPose.orientation.w * parentPose.orientation.w;
             const double qwqz2 = 2*parentPose.orientation.w * parentPose.orientation.z;
             const double qzqz = parentPose.orientation.z * parentPose.orientation.z;
-            pose.position.x = parentPose.position.x + qwqw*delX - qwqz2*delY - qzqz*delX;
-            pose.position.y = parentPose.position.y + qwqw*delY + qwqz2*delX - qzqz*delY;
-            pose.position.z = parentPose.position.z;
+            pose.pose.position.x = parentPose.position.x + qwqw*delX - qwqz2*delY - qzqz*delX;
+            pose.pose.position.y = parentPose.position.y + qwqw*delY + qwqz2*delX - qzqz*delY;
+            pose.pose.position.z = parentPose.position.z;
         } else ROS_ERROR("Could not set target pose for '%s'!", nh.getNamespace().c_str());
     }
 };
