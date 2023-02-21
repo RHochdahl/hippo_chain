@@ -13,6 +13,6 @@
 
     <group ns="bounds" >
         <param name="pose"  value="2.25"    type="double" />
-        <param name="twist" value="1.0"     type="double" />
+        <param name="twist" value="1.5"     type="double" />
     </group>
 </launch>
