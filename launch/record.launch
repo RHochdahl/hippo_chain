@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name = "prefix" default="" />
+
+    <node pkg="rosbag" type="record" name="data_recorder" args="-o $(find hippo_chain)/bags/$(arg prefix)
+        /ChainController/parameter_descriptions
+        /ChainController/parameter_updates
+        /ChainPlanner/parameter_descriptions
+        /ChainPlanner/parameter_updates
+        /KalmanFilter/parameter_descriptions
+        /KalmanFilter/parameter_updates
+        /VehicleControllers/parameter_descriptions
+        /VehicleControllers/parameter_updates
+        /chain/state
+        /chain/target
+        /clock
+        /tf
+        /tf_static
+        /uuv0/ground_truth/odom
+        /uuv0/mavros/setpoint_raw/target_attitude
+        /uuv0/target_pose
+        /uuv1/ground_truth/odom
+        /uuv1/mavros/setpoint_raw/target_attitude
+        /uuv1/target_pose
+        /uuv2/ground_truth/odom
+        /uuv2/mavros/setpoint_raw/target_attitude
+        /uuv2/target_pose"/>
+</launch>
