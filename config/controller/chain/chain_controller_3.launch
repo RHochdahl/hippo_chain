@@ -5,16 +5,16 @@
 
     <param name="dynamic_reconfigure_dir" value="$(find hippo_chain)/cfg/" />
 
-    <include ns="uuv0" file="$(arg child_file)" >
+    <include ns="uuv00" file="$(arg child_file)" >
         <arg name="ahead_of_parent" value="true" />
-        <arg name="parent" value="uuv1" />
+        <arg name="parent" value="uuv01" />
     </include>
 
-    <include ns="uuv1" file="$(arg base_file)" />
+    <include ns="uuv01" file="$(arg base_file)" />
 
-    <include ns="uuv2" file="$(arg child_file)" >
+    <include ns="uuv02" file="$(arg child_file)" >
         <arg name="ahead_of_parent" value="false" />
-        <arg name="parent" value="uuv1" />
+        <arg name="parent" value="uuv01" />
     </include>
 
 </launch>

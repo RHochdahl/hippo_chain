@@ -9,20 +9,20 @@
     <arg name="switch" default="true" />
 
     <group unless="$(arg switch)" >
-        <include ns="uuv0" file="$(arg base_file)" />
+        <include ns="uuv00" file="$(arg base_file)" />
 
-        <include ns="uuv1" file="$(arg child_file)" >
+        <include ns="uuv01" file="$(arg child_file)" >
             <arg name="ahead_of_parent" value="false" />
-            <arg name="parent" value="uuv0" />
+            <arg name="parent" value="uuv00" />
         </include>
     </group>
 
     <group if="$(arg switch)" >
-        <include ns="uuv1" file="$(arg base_file)" />
+        <include ns="uuv01" file="$(arg base_file)" />
 
-        <include ns="uuv0" file="$(arg child_file)" >
+        <include ns="uuv00" file="$(arg child_file)" >
             <arg name="ahead_of_parent" value="true" />
-            <arg name="parent" value="uuv1" />
+            <arg name="parent" value="uuv01" />
         </include>
     </group>
 </launch>

@@ -16,13 +16,13 @@
         /clock
         /tf
         /tf_static
-        /uuv0/ground_truth/odom
-        /uuv0/mavros/setpoint_raw/target_attitude
-        /uuv0/target_pose
-        /uuv1/ground_truth/odom
-        /uuv1/mavros/setpoint_raw/target_attitude
-        /uuv1/target_pose
-        /uuv2/ground_truth/odom
-        /uuv2/mavros/setpoint_raw/target_attitude
-        /uuv2/target_pose"/>
+        /uuv00/ground_truth/odom
+        /uuv00/mavros/setpoint_raw/target_attitude
+        /uuv00/target_pose
+        /uuv01/ground_truth/odom
+        /uuv01/mavros/setpoint_raw/target_attitude
+        /uuv01/target_pose
+        /uuv02/ground_truth/odom
+        /uuv02/mavros/setpoint_raw/target_attitude
+        /uuv02/target_pose"/>
 </launch>
