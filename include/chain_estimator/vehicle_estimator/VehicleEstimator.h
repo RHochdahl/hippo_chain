@@ -16,9 +16,9 @@ class VehicleEstimator
 protected:
     const int PUBLIC_ID;
     std::shared_ptr<ros::NodeHandle> nh;
+    std::shared_ptr<ConfigProvider> configProvider;
     ros::Subscriber sub;
     ros::Timer timer;
-    std::shared_ptr<ConfigProvider> configProvider;
 
     geometry_msgs::PoseWithCovariance absPose;
     geometry_msgs::TwistWithCovariance absTwist;
@@ -32,9 +32,9 @@ public:
     VehicleEstimator(const std::string& name)
     : PUBLIC_ID(shared::getID(name))
     , nh(new ros::NodeHandle(name))
-    , sub(nh->subscribe("ground_truth/odom", 1, &VehicleEstimator::callback, this))
-    , timer(nh->createTimer(ros::Rate(10.0), &VehicleEstimator::bark, this, true, false))
     , configProvider(new ConfigProvider(nh))
+    , sub(nh->subscribe(configProvider->getValueWithDefault<std::string>("/odom_topic", "ground_truth/odom"), 1, &VehicleEstimator::callback, this))
+    , timer(nh->createTimer(ros::Rate(10.0), &VehicleEstimator::bark, this, true, false))
     , timedOut(true)
     {}
 
