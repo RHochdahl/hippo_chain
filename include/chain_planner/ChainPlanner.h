@@ -21,6 +21,7 @@ private:
     ros::Publisher targetPub;
 
     std::vector<int> jointPosSignList;
+    double basePosOffset;
 
     dynamic_reconfigure::Server<hippo_chain::ChainTargetConfig> server;
     dynamic_reconfigure::Server<hippo_chain::ChainTargetConfig>::CallbackType f;
@@ -52,6 +53,7 @@ private:
         if (idMap->count(param.publicId))   throw addition_error("Vehicle has already been added.");
 
         addVehicle(param);
+        basePosOffset = std::abs(param.jointPos)*std::tan(M_PI/6);
         visuals.push_back(std::make_shared<VisualPose>(param.name, param.jointPos, visuals[idMap->at(param.parentId)]));
     }
 
@@ -129,7 +131,10 @@ private:
             periodicMode.reset();
         }
 
-        setBaseState(config.x, config.y, config.z, config.yaw);
+        setBaseState(config.x+std::sin(config.yaw)*basePosOffset,
+                     config.y-std::cos(config.yaw)*basePosOffset,
+                     config.z,
+                     config.yaw);
     }
 
     void setBaseState(const double x, const double y, const double z, const double yaw)
@@ -174,6 +179,7 @@ public:
     : ChainNodeTemplate("chain_planner", vehicles, 2.0)
     , targetPub(nh->advertise<hippo_chain::ChainState>("chain/target", 1))
     , jointPosSignList()
+    , basePosOffset()
     , server(ros::NodeHandle("ChainPlanner"))
     , f(boost::bind(&ChainPlanner::reconfigureCallback, this, _1, _2))
     , msg()
