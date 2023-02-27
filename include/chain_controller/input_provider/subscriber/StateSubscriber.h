@@ -38,7 +38,7 @@ public:
 
     void bark(const ros::TimerEvent& e)
     {
-        ROS_WARN_THROTTLE(5.0, "State too old, setting target velocity to zero.");
+        ROS_ERROR_THROTTLE(5.0, "State timed out!");
         timedOut = true;
     }
 };
