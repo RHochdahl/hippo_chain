@@ -8,6 +8,7 @@ namespace po = boost::program_options;
 struct PlannerOptions
 {
     std::vector<std::string> vehicles;
+    double rate = std::numeric_limits<double>::quiet_NaN();
 };
 
 PlannerOptions parseArgs(int argc, char **argv)
@@ -18,6 +19,7 @@ PlannerOptions parseArgs(int argc, char **argv)
 
     descriptions.add_options()
         ("help,h", "produce help message")
+        ("rate,r", po::value<double>(), "rate of estimator in Hz")
         ("vehicles", po::value< std::vector<std::string> >()->multitoken(), "names of vehicles in chain");
      
     po::variables_map varMap;
@@ -40,6 +42,9 @@ PlannerOptions parseArgs(int argc, char **argv)
         exit(0);
     }
 
+    if (varMap.count("rate"))
+        options.rate = varMap["rate"].as<double>();
+
     if (varMap.count("vehicles"))
     {
         std::vector<std::string> topics = varMap["vehicles"].as< std::vector<std::string> >();
@@ -59,7 +64,7 @@ int main(int argc, char **argv)
 
     ros::init(argc, argv, "chain_planner");
 
-    ChainPlanner planner(options.vehicles);
+    ChainPlanner planner(options.vehicles, options.rate);
 
     planner.spin();
 

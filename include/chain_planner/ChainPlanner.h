@@ -12,7 +12,9 @@
 
 #include "VisualPose.h"
 #include "periodic_modes/PeriodicMode.h"
-#include "periodic_modes/PeriodicReconfigurationMode.h"
+#include "periodic_modes/JointStepWaveMode.h"
+#include "periodic_modes/JointSineWaveMode.h"
+#include "periodic_modes/JointRampWaveMode.h"
 
 
 class ChainPlanner : public ChainNodeTemplate
@@ -34,12 +36,13 @@ private:
     std::unique_ptr<PeriodicMode> periodicMode;
 
 
-#define NEUTRAL_POSE 0.85, 1.7, -0.5, M_PI_2
+#define NEUTRAL_POSE 0.99, 1.9, -0.59, -M_PI_2
 
 
     void addVehicle(const VehicleParam& param)
     {
         if (!idMap->insert(std::make_pair(param.publicId, numVehicles)).second) throw addition_error("Vehicle has already been added.");
+        idList->push_back(param.publicId);
         dofList.push_back(param.dof);
         jointPosSignList.push_back(shared::sgn(param.jointPos));
         numVehicles++;
@@ -96,7 +99,7 @@ private:
 
         default:
             ROS_ERROR("Unexpected mode chosen!");
-            periodicMode.release();
+            periodicMode.reset();
             break;
         }
 
@@ -119,8 +122,26 @@ private:
     {
         if (reset){
             setBaseState(NEUTRAL_POSE);
-            periodicMode.reset(new PeriodicReconfigurationMode(config.Period, config.Duration, boost::bind(&ChainPlanner::setChildStates, this, _1)));
-            periodicMode->start(5.0);
+            switch (config.waveMode)
+            {
+            case 0:
+                periodicMode.reset(new JointStepWaveMode(config.Amplitude, config.Period, config.Duration, boost::bind(&ChainPlanner::setChildStates, this, _1)));
+                break;
+
+            case 1:
+                periodicMode.reset(new JointSineWaveMode(config.Amplitude, config.Period, config.Duration, boost::bind(&ChainPlanner::setChildStates, this, _1, _2)));
+                break;
+
+            case 2:
+                periodicMode.reset(new JointRampWaveMode(config.Amplitude, config.Period, config.Duration, config.TimeStep, config.SetVelocity, boost::bind(&ChainPlanner::setChildStates, this, _1, _2)));
+                break;
+
+            default:
+                ROS_WARN("Unknown wave mode selected!");
+                return;
+            }
+
+            periodicMode->start(1.0);
         }
     }
 
@@ -140,7 +161,7 @@ private:
     void setBaseState(const double x, const double y, const double z, const double yaw)
     {
         hippo_chain::ChainVehicleState baseState;
-        baseState.vehicle_id = idMap->at(0);
+        baseState.vehicle_id = idList->at(0);
         const double halfYaw = yaw / 2;
         baseState.pose = {x, y, z, std::cos(halfYaw), 0, 0, std::sin(halfYaw)};
         baseState.twist = std::vector<double>(6, 0);
@@ -150,13 +171,21 @@ private:
 
     void setChildStates(const double form)
     {
+        setChildStates(form, 0.0);
+    }
+
+    void setChildStates(const double form, const double rate)
+    {
+        const double maxAngle = 2 * M_PI / std::max(numVehicles, 3);
         for (int i=1; i<numVehicles; i++) {
             hippo_chain::ChainVehicleState childState;
-            childState.vehicle_id = idMap->at(i);
+            childState.vehicle_id = idList->at(i);
             childState.pose = std::vector<double>(dofList[i]);
-            childState.pose.front() = -form * jointPosSignList[i] * 2 * M_PI / std::max(numVehicles, 3);
+            childState.pose.front() = -form * jointPosSignList[i] * maxAngle;
             for (auto it=childState.pose.begin()+1, end=childState.pose.end(); it<end; it++) *it = 0;
-            childState.twist = std::vector<double>(dofList[i], 0);
+            childState.twist = std::vector<double>(dofList[i]);
+            childState.twist.front() = -rate * jointPosSignList[i] * maxAngle;
+            for (auto it=childState.twist.begin()+1, end=childState.twist.end(); it<end; it++) *it = 0;
             visuals[i]->set(childState.pose);
             msg.data[i] = childState;
         }
@@ -175,8 +204,8 @@ private:
     
 
 public:
-    ChainPlanner(std::vector<std::string> vehicles)
-    : ChainNodeTemplate("chain_planner", vehicles, 2.0)
+    ChainPlanner(std::vector<std::string> vehicles, const double rate)
+    : ChainNodeTemplate("chain_planner", vehicles, rate)
     , targetPub(nh->advertise<hippo_chain::ChainState>("chain/target", 1))
     , jointPosSignList()
     , basePosOffset()
@@ -194,7 +223,7 @@ public:
         ROS_INFO("Constructed chain planner for %i vehicles", numVehicles);
     }
 
-    ChainPlanner() : ChainPlanner(std::vector<std::string>()) {}
+    ChainPlanner() : ChainPlanner(std::vector<std::string>(), std::nan("")) {}
 
     void spin()
     {

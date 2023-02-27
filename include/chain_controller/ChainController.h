@@ -48,6 +48,7 @@ private:
     void addVehicle(std::shared_ptr<VehicleController> vehicle, const int publicId)
     {
         if (!idMap->insert(std::make_pair(publicId, numVehicles)).second) throw addition_error("Vehicle has already been added.");
+        idList->push_back(publicId);
         vehicleControllers.push_back(vehicle);
         numVehicles++;
         int dof = vehicle->getDof();

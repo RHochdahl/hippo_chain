@@ -21,6 +21,7 @@ private:
     void addVehicle(const VehicleParam& param)
     {
         if (!idMap->insert(std::make_pair(param.publicId, numVehicles)).second) throw addition_error("Vehicle has already been added.");
+        idList->push_back(param.publicId);
 
         watchers.push_back(std::move(std::unique_ptr<VehicleWatcher>(new VehicleWatcher(param.name, bounds))));
 

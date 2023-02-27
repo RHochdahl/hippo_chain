@@ -7,7 +7,7 @@
 
 class PeriodicMode
 {
-private:
+protected:
     ros::NodeHandle nh;
     ros::Timer periodicTimer;
     ros::Timer startTimer;
@@ -21,9 +21,10 @@ private:
 
     void stop(const ros::TimerEvent& e)
     {
-        periodicTimer.stop();
-        ROS_INFO("Periodic mode has finished.");
+        stop();
     }
+
+    virtual void neutral() = 0;
 
 
 public:
@@ -40,6 +41,13 @@ public:
         periodicTimer.start();
         stopTimer.start();
         f();
+    }
+
+    void stop()
+    {
+        periodicTimer.stop();
+        neutral();
+        ROS_INFO("Periodic mode has finished.");
     }
 
     void start(const double delay)

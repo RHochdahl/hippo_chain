@@ -22,6 +22,7 @@ protected:
 
     int numVehicles;
     std::shared_ptr<std::map<int, int>> idMap;
+    std::shared_ptr<std::vector<int>> idList;
     std::vector<int> dofList;
 
     struct VehicleParam
@@ -137,6 +138,7 @@ public:
     , rate((std::isnan(rate) ? DEFAULT_RATE : rate))
     , numVehicles(0)
     , idMap(new std::map<int, int>())
+    , idList(new std::vector<int>())
     , dofList()
     {
         if (!vehicles.size()) {
