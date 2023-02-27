@@ -52,6 +52,24 @@ private:
 
         belief = stateTransitionMatrix*belief;
         covariance = stateTransitionMatrix*covariance*stateTransitionMatrix.transpose() + modelCov;
+
+        bound();
+    }
+
+    void bound()
+    {
+        double* it = belief.data();
+        int idx = 0;
+        for (; idx < Dim; idx++, it++) {
+            if (*it > M_PI) {
+                *it = M_PI;
+                continue;
+            }
+            if (*it < -M_PI) {
+                *it = -M_PI;
+                continue;
+            }
+        }
     }
 
 
@@ -83,6 +101,7 @@ public:
         if (!initialized) {
             belief = z;
             covariance = measurementCov;
+            initialized = true;
             lastPrediction = ros::Time::now();
             return z;
         }
@@ -94,6 +113,8 @@ public:
 
         covariance = (Matrix::Identity() - kalmanGain) * covariance;
         belief.noalias() += kalmanGain * innovation;
+
+        bound();
 
         return belief;
     }
