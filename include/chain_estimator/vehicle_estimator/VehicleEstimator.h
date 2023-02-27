@@ -33,8 +33,8 @@ public:
     : PUBLIC_ID(shared::getID(name))
     , nh(new ros::NodeHandle(name))
     , configProvider(new ConfigProvider(nh))
-    , sub(nh->subscribe(configProvider->getValueWithDefault<std::string>("/odom_topic", "ground_truth/odom"), 1, &VehicleEstimator::callback, this))
-    , timer(nh->createTimer(ros::Rate(10.0), &VehicleEstimator::bark, this, true, false))
+    , sub(nh->subscribe(configProvider->getValueWithDefault<std::string>("/odom_topic", "odom"), 1, &VehicleEstimator::callback, this))
+    , timer(nh->createTimer(ros::Rate(2.0), &VehicleEstimator::bark, this, true, false))
     , timedOut(true)
     {}
 
@@ -44,6 +44,14 @@ public:
         absPose = msg.pose;
         absTwist = msg.twist;
         timedOut = false;
+
+        if (absPose.pose.orientation.w < 0) {
+            absPose.pose.orientation.x *= -1;
+            absPose.pose.orientation.y *= -1;
+            absPose.pose.orientation.z *= -1;
+            absPose.pose.orientation.w *= -1;
+        }
+
         timer.start();
     }
 
