@@ -4,6 +4,7 @@
 
 #include <memory>
 #include "VehicleController.h"
+#include <hippo_chain/Error.h>
 
 
 template<typename JointModel>
@@ -11,6 +12,8 @@ class ChildVehicleController : public VehicleController
 {
 private:
     const std::shared_ptr<VehicleController> parent;
+
+    ros::Publisher error_pub;
 
     JointModel jointModel;
 
@@ -48,6 +51,7 @@ public:
     ChildVehicleController(const std::shared_ptr<VehicleController> ptr, const std::string& name, const int id)
     : VehicleController(name, id)
     , parent(ptr)
+    , error_pub(nh->advertise<hippo_chain::Error>("error", 1))
     , jointModel(configProvider)
     {
         assert(ID > 0);
@@ -98,8 +102,23 @@ public:
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
         debugger.addEntry("bounded desired pose", controllerStates.thetaDes);
         debugger.addEntry("bounded desired twist", controllerStates.zetaDes);
-        controllerStates.sigma = jointModel.mapDerivative(controllerStates.zetaDes) + param.kSigma * limitError(controllerStates.thetaDes - jointModel.theta, param.maxAngularError);
-        controllerStates.sigmaDot = param.kSigma * jointModel.mapDerivative(controllerStates.zetaDes - jointModel.zeta);
+        const double angleError = limitError(controllerStates.thetaDes - jointModel.theta, param.maxAngularError);
+        const double twistError = controllerStates.zetaDes - jointModel.zeta;
+        controllerStates.sigma = jointModel.mapDerivative(controllerStates.zetaDes) + param.kSigma * angleError;
+
+        {
+            hippo_chain::Error errorMsg;
+            errorMsg.header.stamp = ros::Time::now();
+            errorMsg.angle = jointModel.theta;
+            errorMsg.desired_angle = controllerStates.thetaDes;
+            errorMsg.angle_error = angleError;
+            errorMsg.twist = jointModel.zeta;
+            errorMsg.desired_twist = controllerStates.zetaDes;
+            errorMsg.twist_error = twistError;
+            error_pub.publish(errorMsg);
+        }
+
+        controllerStates.sigmaDot = param.kSigma * jointModel.mapDerivative(twistError);
         debugger.addEntry("sigma", controllerStates.sigma);
         debugger.addEntry("d/dt sigma", controllerStates.sigmaDot);
 
