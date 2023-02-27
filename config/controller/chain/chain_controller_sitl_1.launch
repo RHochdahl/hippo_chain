@@ -4,5 +4,5 @@
 
     <param name="dynamic_reconfigure_dir" value="$(find hippo_chain)/cfg/" />
 
-    <include ns="uuv02" file="$(arg base_file)" />
+    <include ns="uuv00" file="$(arg base_file)" />
 </launch>

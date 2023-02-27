@@ -1,20 +1,34 @@
 <?xml version="1.0"?>
 <launch>
-    <arg name="simulate" value="true" />
-    <arg name="num_vehicles" default="3" />
-    <arg name="odom_topic" default="ground_truth/odom" />
+    <arg name="simulate" default="false" />
+    <arg name="num_vehicles" default="2" />
 
-    <param name="/odom_topic" value="$(arg odom_topic)" />
+    <arg name="rate" default="50.0" />
 
-    <include file="$(find hippo_chain)/config/controller/chain/chain_controller_$(arg num_vehicles).launch" />
 
-    <include if="$(arg simulate)" file="$(find hippocampus_sim)/launch/top_vehicle_chain_complete.launch" >
-        <arg name="num_vehicles" value="$(arg num_vehicles)" />
-    </include>
+    <group if="$(arg simulate)" >
+        <include file="$(find hippo_chain)/config/controller/chain/chain_controller_sitl_$(arg num_vehicles).launch" />
 
-    <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" />
-    <node pkg="hippo_chain" type="hippo_chain_estimator_node" name="hippo_chain_estimator_node" output="screen" />
-    <node pkg="hippo_chain" type="hippo_chain_planner_node" name="hippo_chain_planner_node" output="screen" />
+        <param name="/odom_topic" value="ground_truth/odom" />
 
-    <include unless="$(arg simulate)" file="$(find hippo_chain)/launch/watcher.launch" />
+        <include file="$(find hippocampus_sim)/launch/top_vehicle_chain_complete.launch" >
+            <arg name="num_vehicles" value="$(arg num_vehicles)" />
+        </include>
+
+        <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" args="-r $(arg rate)" />
+        <node pkg="hippo_chain" type="hippo_chain_estimator_node" name="hippo_chain_estimator_node" output="screen" args="-r $(arg rate)" />
+        <node pkg="hippo_chain" type="hippo_chain_planner_node" name="hippo_chain_planner_node" output="screen" />
+    </group>
+
+    <group unless="$(arg simulate)" >
+        <include file="$(find hippo_chain)/config/controller/chain/chain_controller_$(arg num_vehicles).launch" />
+
+        <param name="/odom_topic" value="odom" />
+
+        <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" args="-r $(arg rate) --vehicles uuv02 uuv03" />
+        <node pkg="hippo_chain" type="hippo_chain_estimator_node" name="hippo_chain_estimator_node" output="screen" args="-r $(arg rate) --vehicles uuv02 uuv03" />
+        <node pkg="hippo_chain" type="hippo_chain_planner_node" name="hippo_chain_planner_node" output="screen" args="-r $(arg rate) --vehicles uuv02 uuv03" />
+
+        <include file="$(find hippo_chain)/launch/watcher.launch" />
+    </group>
 </launch>

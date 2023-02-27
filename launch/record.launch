@@ -17,12 +17,24 @@
         /tf
         /tf_static
         /uuv00/ground_truth/odom
+        /uuv00/odom
         /uuv00/mavros/setpoint_raw/target_attitude
         /uuv00/target_pose
+        /uuv00/error
         /uuv01/ground_truth/odom
+        /uuv01/odom
         /uuv01/mavros/setpoint_raw/target_attitude
         /uuv01/target_pose
+        /uuv01/error
         /uuv02/ground_truth/odom
+        /uuv02/odom
         /uuv02/mavros/setpoint_raw/target_attitude
-        /uuv02/target_pose"/>
+        /uuv02/target_pose
+        /uuv02/error
+        /uuv03/ground_truth/odom
+        /uuv03/odom
+        /uuv03/mavros/setpoint_raw/target_attitude
+        /uuv03/target_pose
+        /uuv03/error
+        "/>
 </launch>
