@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="base_file" value="$(find hippo_chain)/config/controller/vehicle/vehicle_controller.launch" />
+    <arg name="child_file" value="$(find hippo_chain)/config/controller/vehicle/child_vehicle_controller.launch" />
+
+    <param name="dynamic_reconfigure_dir" value="$(find hippo_chain)/cfg/" />
+
+    <include ns="uuv04" file="$(arg base_file)" />
+
+    <include ns="uuv03" file="$(arg child_file)" >
+        <arg name="ahead_of_parent" value="false" />
+        <arg name="parent" value="uuv04" />
+    </include>
+
+    <include ns="uuv02" file="$(arg child_file)" >
+        <arg name="ahead_of_parent" value="false" />
+        <arg name="parent" value="uuv03" />
+    </include>
+
+</launch>
