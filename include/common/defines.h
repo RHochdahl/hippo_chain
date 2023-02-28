@@ -39,3 +39,6 @@ namespace hippo {\
 
 
 #define DEFAULT_RATE 200.0
+
+#define TO_DEG (180/M_PI)
+#define TO_RAD (M_PI/180)
