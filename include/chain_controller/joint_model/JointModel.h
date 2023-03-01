@@ -40,12 +40,6 @@ public:
 
 
     template<typename Derived>
-    auto mapDerivative(const Eigen::MatrixBase<Derived>& velocity) const
-    {
-        return T * velocity;
-    }
-
-    template<typename Derived>
     auto mapVelocity(const Eigen::MatrixBase<Derived>& velocity) const
     {
         return Phi * velocity;

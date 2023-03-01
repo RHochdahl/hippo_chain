@@ -14,11 +14,6 @@ protected:
     virtual void calcTheta() = 0;
 
 public:
-    auto mapDerivative(const double velocity) const
-    {
-        return velocity;
-    }
-
     auto mapVelocity(const double velocity) const
     {
         return Phi * velocity;
