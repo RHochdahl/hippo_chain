@@ -194,6 +194,9 @@ private:
         baseState.twist = {u, v, w, 0.0, 0.0, omega};
         visuals.front()->set(baseState.pose);
         msg.data.front() = baseState;
+        for (int i=1; i<numVehicles; i++) {
+            visuals[i]->refresh();
+        }
     }
 
     void setChildStates(const double angle)
