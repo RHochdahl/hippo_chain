@@ -56,18 +56,18 @@ public:
         switch (axis)
         {
         case Axis::x:
-            phiMeas = 2 * std::asin(shared::sgn(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z)
-                                    * std::clamp(qP.w*qC.x - qC.w*qP.x - qP.y*qC.z + qP.z*qC.y, -1.0, 1.0));
+            phiMeas = 2 * std::asin(std::clamp(shared::sgn(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z)
+                                               * (qP.w*qC.x - qC.w*qP.x - qP.y*qC.z + qP.z*qC.y), -1.0, 1.0));
             break;
 
         case Axis::y:
-            phiMeas = 2 * std::asin(shared::sgn(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z)
-                                    * std::clamp(qP.w*qC.y - qC.w*qP.y - qP.z*qC.x + qP.x*qC.z, -1.0, 1.0));
+            phiMeas = 2 * std::asin(std::clamp(shared::sgn(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z)
+                                               * (qP.w*qC.y - qC.w*qP.y - qP.z*qC.x + qP.x*qC.z), -1.0, 1.0));
             break;
 
         case Axis::z:
-            phiMeas = 2 * std::asin(shared::sgn(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z)
-                                    * std::clamp(qP.w*qC.z - qC.w*qP.z - qP.x*qC.y + qP.y*qC.x, -1.0, 1.0));
+            phiMeas = 2 * std::asin(std::clamp(shared::sgn(qC.w*qP.w + qC.x*qP.x + qC.y*qP.y + qC.z*qP.z)
+                                               * (qP.w*qC.z - qC.w*qP.z - qP.x*qC.y + qP.y*qC.x), -1.0, 1.0));
             break;
 
         default:
