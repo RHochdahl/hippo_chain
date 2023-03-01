@@ -8,7 +8,7 @@
 class JointRampWaveMode : public ContinuousMode
 {
 private:
-    int amplitude;
+    double amplitude;
     double frequency;
     double velocity;
     int startPoint;
@@ -36,7 +36,7 @@ private:
 
 
 public:
-    JointRampWaveMode(const int _amplitude, const double _period, const double _duration, boost::function<void(double, double)> _setAngleFunction)
+    JointRampWaveMode(const double _amplitude, const double _period, const double _duration, boost::function<void(double, double)> _setAngleFunction)
     : ContinuousMode(_duration)
     , amplitude(_amplitude)
     , frequency(1.0/_period)

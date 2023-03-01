@@ -8,7 +8,7 @@
 class JointSineWaveMode : public ContinuousMode
 {
 private:
-    int amplitude;
+    double amplitude;
     double frequency;
     boost::function<void(double, double)> setAngleFunction;
 
@@ -22,7 +22,7 @@ private:
 
 
 public:
-    JointSineWaveMode(const int _amplitude, const double _period, const double _duration, boost::function<void(int, double)> _setAngleFunction)
+    JointSineWaveMode(const double _amplitude, const double _period, const double _duration, boost::function<void(double, double)> _setAngleFunction)
     : ContinuousMode(_duration)
     , amplitude(_amplitude)
     , frequency(2*M_PI/_period)

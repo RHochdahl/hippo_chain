@@ -8,9 +8,9 @@
 class JointSetpointMode : public DiscreteMode
 {
 private:
-    int angle;
-    int amplitude;
-    int stepSize;
+    double angle;
+    double amplitude;
+    double stepSize;
     int direction;
     boost::function<void(double)> setAngleFunction;
 
@@ -31,7 +31,7 @@ private:
 
 
 public:
-    JointSetpointMode(const int _amplitude, const int _stepSize, const double _dT, const double _duration, boost::function<void(double)> _setAngleFunction)
+    JointSetpointMode(const double _amplitude, const double _stepSize, const double _dT, const double _duration, boost::function<void(double)> _setAngleFunction)
     : DiscreteMode(_dT, _duration, boost::bind(&JointSetpointMode::callback, this))
     , angle(0)
     , amplitude(_amplitude)
