@@ -23,6 +23,7 @@ private:
         double kSat;
         double lim;
         double maxAngularError;
+        double lsqWeight;
     } param;
 
     struct ControllerStates {
@@ -43,6 +44,7 @@ private:
         param.kSat = config.kSat;
         param.lim = config.lim;
         param.maxAngularError = config.maxAngularError;
+        param.lsqWeight = config.lsqWeight;
         ROS_INFO("Updated child controller parameters for '%s'", nh->getNamespace().c_str());
     }
 
@@ -148,9 +150,11 @@ public:
         if constexpr (std::is_same<typename JointModel::JointVector, double>::value) {
             eta(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(std::abs(s), param.lim);
             debugger.addEntry("eta", eta(idx));
+            eta(idx) *= param.lsqWeight;
         } else {
             eta.middleRows<JointModel::DOF>(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
             debugger.addEntry("eta", eta.middleRows<JointModel::DOF>(idx));
+            eta.middleRows<JointModel::DOF>(idx) *= param.lsqWeight;
         }
     }
 
@@ -164,7 +168,7 @@ public:
                       Eigen::Matrix<double, 6, 4>& X,
                       const std::vector<int>& idxList) const
     {
-        B.middleRows<JointModel::DOF>(idxList[ID]) = jointModel.Phi.transpose() * X;
+        B.middleRows<JointModel::DOF>(idxList[ID]) = param.lsqWeight * jointModel.Phi.transpose() * X;
         X = jointModel.transposedTransform(X).eval();
         parent->calcOffDiagB(B, X, idxList);
     }
@@ -174,7 +178,7 @@ public:
                const std::vector<int>& idxList) const
     {
         assert(idxList.size() >= ID);
-        B.middleRows<JointModel::DOF>(idxList[ID]) = jointModel.Phi.transpose() * thrusterModel.Psi;
+        B.middleRows<JointModel::DOF>(idxList[ID]) = param.lsqWeight * jointModel.Phi.transpose() * thrusterModel.Psi;
         Eigen::Matrix<double, 6, 4> X = jointModel.transposedTransform(thrusterModel.Psi);
         parent->calcOffDiagB(B, X, idxList);
     }
