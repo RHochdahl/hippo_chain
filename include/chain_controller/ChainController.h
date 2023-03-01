@@ -168,7 +168,8 @@ private:
         config.run = running;
 
         if (numVehicles) {
-            reinterpret_cast<BaseVehicleController*>(vehicleControllers.front().get())->fix(config.fixBase);
+            if (level) config.fixBase = reinterpret_cast<BaseVehicleController*>(vehicleControllers.front().get())->isFixed();
+            else config.fixBase = reinterpret_cast<BaseVehicleController*>(vehicleControllers.front().get())->fix(config.fixBase);
         }
     }
     

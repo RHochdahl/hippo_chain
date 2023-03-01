@@ -2,6 +2,8 @@
 <launch>
     <arg name="simulate" default="false" />
     <arg name="num_vehicles" default="2" />
+    <arg name="fix_base" default="false" />
+    <param name="fix_base" value="$(arg fix_base)" />
 
     <arg name="rate" default="50.0" />
 
@@ -13,6 +15,7 @@
 
         <include file="$(find hippocampus_sim)/launch/top_vehicle_chain_complete.launch" >
             <arg name="num_vehicles" value="$(arg num_vehicles)" />
+            <arg name="fix_base" value="$(arg fix_base)" />
         </include>
 
         <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" args="-r $(arg rate)" />

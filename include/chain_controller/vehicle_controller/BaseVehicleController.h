@@ -117,7 +117,7 @@ private:
 public:
     BaseVehicleController(const std::string& name)
     : VehicleController(name, 0)
-    , fixed(false)
+    , fixed(configProvider->getValueWithDefault("/fix_base", false))
     {
         VehicleController* base = static_cast<VehicleController*>(this);
         base->dynamicReconfigureManager->initCallback(base);
@@ -132,7 +132,12 @@ public:
     {
         if (_fixed && !fixed) ROS_WARN("Fixing Base vehicle '%s'. The vehicle should be physically fixed!", nh->getNamespace().c_str());
         fixed = _fixed;
-        return true;
+        return fixed;
+    }
+
+    bool isFixed()
+    {
+        return fixed;
     }
 
     /**
@@ -189,7 +194,11 @@ public:
                       Eigen::Matrix<double, 6, 4>& X,
                       const std::vector<int>& idxList) const
     {
-        B.topRows<6>() = X;
+        if (fixed) {
+            B.topRows<6>().fill(0.0);
+        } else {
+            B.topRows<6>() = X;
+        }
     }
 
     void calcEta(Eigen::Ref<Eigen::VectorXd> eta, const int idx)
