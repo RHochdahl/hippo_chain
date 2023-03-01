@@ -33,7 +33,7 @@ private:
 
     void updateParameters(const hippo_chain::KalmanFilterConfig& config, uint32_t level)
     {
-        if (config.reset_to_default) initialized = false;
+        if (level) initialized = false;
 
         for (uint32_t idx=0U; idx<Dim; idx++) {
             modelCov(idx, idx) = config.angleCovMod;
@@ -79,8 +79,8 @@ public:
     , lastPrediction()
     , belief()
     , covariance()
-    , modelCov()
-    , measurementCov()
+    , modelCov(Matrix::Zero())
+    , measurementCov(Matrix::Zero())
     , stateTransitionMatrix(Matrix::Identity())
     , f(boost::bind(&KalmanFilter::updateParameters, this, _1, _2))
     {
