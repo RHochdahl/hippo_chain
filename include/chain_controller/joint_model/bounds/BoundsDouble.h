@@ -9,8 +9,8 @@
 class BoundsDouble : public Bounds<double>
 {
 public:
-    BoundsDouble(const double poseUpper, const double poseLower, const double twist)
-    : Bounds(std::vector<double>(1, poseUpper), std::vector<double>(1, poseLower), std::vector<double>(1, twist))
+    BoundsDouble(const double poseUpper, const double twist)
+    : Bounds(std::vector<double>(1, poseUpper), std::vector<double>(1, twist))
     {}
 
     bool checkBounds(const double& actPose, const double& actTwist) const

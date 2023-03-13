@@ -7,14 +7,10 @@
 
 class BaseVehicleEstimator : public VehicleEstimator
 {
-private:
-    /* data */
 public:
     BaseVehicleEstimator(const std::string& name)
     : VehicleEstimator(name)
-    {
-
-    }
+    {}
 
     hippo_chain::ChainVehicleState getStateMsg() const
     {

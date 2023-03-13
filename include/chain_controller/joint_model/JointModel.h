@@ -12,10 +12,63 @@ template<std::size_t dof>
 class JointModel
 {
 protected:
+    enum Axis
+    {
+        undefined = 0,
+        x = 1,
+        y = 2,
+        z = 3
+    };
+
     virtual void calcA() = 0;
     virtual void calcPhi() = 0;
     virtual void calcTheta() = 0;
-    virtual void calcT() = 0;
+
+
+    static inline Eigen::Matrix3d calcR(const Axis& axis, const double angle)
+    {
+        Eigen::Matrix3d mat = Eigen::Matrix3d::Identity();
+
+        switch (axis)
+        {
+        case Axis::x:
+            /*
+             * [[      1       0       0       ]
+             *  [      0      c{}     s{}      ]
+             *  [      0     -s{}     c{}      ]]
+             */
+            mat(1, 1) = mat(2, 2) = std::cos(angle);
+            mat(2, 1) = -(mat(1, 2) = std::sin(angle));
+            break;
+
+        case Axis::y:
+            /*
+             * [[     c{}      0     -s{}     ]
+             *  [      0       1       0      ]
+             *  [     s{}      0      c{}     ]]
+             */
+            mat(0, 0) = mat(2, 2) = std::cos(angle);
+            mat(0, 2) = -(mat(2, 0) = std::sin(angle));
+            break;
+
+        case Axis::z:
+            /*
+             * [[     c{}     s{}      0      ]
+             *  [    -s{}     c{}      0      ]
+             *  [      0       0       1      ]]
+             */
+            mat(0, 0) = mat(1, 1) = std::cos(angle);
+            mat(1, 0) = -(mat(0, 1) = std::sin(angle));
+            break;
+
+        default:
+            throw std::runtime_error("Unknown Axis");
+            break;
+        }
+
+        return mat;
+    }
+
 
 public:
     static constexpr int DOF = dof;
@@ -24,7 +77,6 @@ public:
 
     JointVector theta;                      // joint coordinates
     JointVector zeta;                       // joint velocities
-    JointMatrix T;                          // matrix to get derivatives of joint coordinates from joint velocities
     Eigen::Matrix6d A;                      // transformation matrix to parent frame
     Eigen::Matrix<double, 6, dof> Phi;      // jacobian of joint velocities to relative velocities
     Eigen::Matrix<double, 6, dof> Theta;    // time derivative of Phi
@@ -73,7 +125,6 @@ public:
         calcA();
         calcPhi();
         calcTheta();
-        calcT();
         xiRel = mapVelocity(zeta);
         if (!bounds->checkBounds(theta, zeta)) ROS_WARN_THROTTLE(5.0, "Joint out of bounds!");
     }

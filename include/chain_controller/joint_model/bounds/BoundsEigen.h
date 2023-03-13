@@ -10,8 +10,8 @@ template<std::size_t SIZE>
 class BoundsEigen : public Bounds<Eigen::Matrix<double, SIZE, 1>>
 {
 public:
-    BoundsEigen(const std::vector<double>& poseUpper, const std::vector<double>& poseLower, const std::vector<double>& twist)
-    : Bounds<Eigen::Matrix<double, SIZE, 1>>(poseUpper, poseLower, twist)
+    BoundsEigen(const std::vector<double>& poseUpper, const std::vector<double>& twist)
+    : Bounds<Eigen::Matrix<double, SIZE, 1>>(poseUpper, twist)
     {}
 
     bool checkBounds(const Eigen::Matrix<double, SIZE, 1>& actPose, const Eigen::Matrix<double, SIZE, 1>& actTwist) const

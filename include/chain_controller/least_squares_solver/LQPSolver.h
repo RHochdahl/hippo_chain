@@ -45,7 +45,7 @@ private:
 
 
 public:
-    LQPSolver(const int size, const int verbosity = 5)
+    LQPSolver(const int size, const int verbosity = 0)
     : LeastSquaresSolver(size)
     , Q(Eigen::MatrixXd::Zero(SIZE, SIZE))
     , q(Eigen::VectorXd::Zero(SIZE))
@@ -89,6 +89,8 @@ public:
         debugger.addEntry("desired eta", eta);
 
         Q.noalias() = B.transpose() * B;
+        const double penalty = 1e-5*Q.diagonal().maxCoeff();
+        Q.diagonal().array() += penalty;
         q.noalias() = -B.transpose() * eta;
 
         debugger.addEntry("Q", Q);

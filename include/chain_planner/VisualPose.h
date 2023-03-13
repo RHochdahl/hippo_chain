@@ -58,7 +58,7 @@ public:
 
     void set(const std::vector<double>& _pose)
     {
-        if ((_pose.size() == 7 && parent == nullptr) || (_pose.size() == 1 && parent != nullptr)) {
+        if ((_pose.size() == 7 && parent == nullptr) || (parent != nullptr)) {
             poseVec = _pose;
             refresh();
         } else ROS_ERROR("Could not set target pose for '%s'!", nh.getNamespace().c_str());
@@ -81,7 +81,7 @@ public:
             assert(std::abs(parentPose.orientation.x) < 1e-12);
             assert(std::abs(parentPose.orientation.y) < 1e-12);
             assert(!std::isnan(jointPos));
-            const double angle = poseVec.front();
+            const double angle = poseVec.back();
             const double halfAngle = 0.5*angle;
             const double halfSin = std::sin(halfAngle);
             const double halfCos = std::cos(halfAngle);

@@ -65,6 +65,13 @@ public:
         assert(B.cols() == SIZE);
         assert(nu.rows() == SIZE);
 
+        Eigen::MatrixXd B_(B.rows()+B.cols(), B.cols());
+        B_.block(0, 0, B.rows(), B.cols()) = B;
+        B_.block(B.rows(), 0, B.cols(), B.cols()) = 1e-4 * B.maxCoeff() * Eigen::MatrixXd::Identity(B.cols(), B.cols());
+        Eigen::VectorXd eta_(eta.rows()+B.cols());
+        eta_.topRows(eta.rows()) = eta;
+        eta_.bottomRows(B.cols()).fill(0.0);
+
 #ifndef NDEBUG
         const clock_t begin_time = clock();
 
@@ -73,11 +80,9 @@ public:
         debugger.addEntry("desired eta", eta);
 #endif  // NDEBUG
 
-        A.set_size(B.rows(), B.cols());
-        std::copy(B.data(), B.data()+B.size(), A.data());
+        A.set(B_.data(), static_cast<int>(B_.rows()), static_cast<int>(B_.cols()));
 
-        b.set_size(eta.rows());
-        std::copy(eta.data(), eta.data()+eta.size(), b.data());
+        b.set(eta_.data(), static_cast<int>(eta_.rows()));
 
         x.set(nu.data(), SIZE);
 

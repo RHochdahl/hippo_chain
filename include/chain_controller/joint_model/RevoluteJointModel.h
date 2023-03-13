@@ -13,13 +13,7 @@
 class RevoluteJointModel : public JointModel1d
 {
 private:
-    enum Axis
-    {
-        undefined = 0,
-        x = 1,
-        y = 2,
-        z = 3
-    } axis;                 // axis of rotation
+    Axis axis;              // axis of rotation
     double jointPosX;       // x-coordinates of joint in child frame
 
 
@@ -112,11 +106,6 @@ private:
         Theta.fill(0);
     }
 
-    void calcT()
-    {
-        T = 1.0;
-    }
-
 
 public:
     static constexpr const char* jointTypeName = "revolute";
@@ -132,12 +121,11 @@ public:
               configProvider->getValue("joint/bounds/twist", twistLim)))
             ROS_FATAL("Could not retrieve joint parameters!");
         axis = static_cast<Axis>(axisInt);
-        bounds.reset(new BoundsDouble(poseLim, -poseLim, twistLim));
+        bounds.reset(new BoundsDouble(poseLim, twistLim));
 
         initA();
         calcPhi();
         calcTheta();
-        calcT();
     }
 
     ~RevoluteJointModel()

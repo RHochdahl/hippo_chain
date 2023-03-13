@@ -28,9 +28,9 @@ private:
 
 
 public:
-    Bounds(const std::vector<double>& poseUpper, const std::vector<double>& poseLower, const std::vector<double>& twist)
-    : poseUpperLimit(toStateVector(poseUpper))
-    , poseLowerLimit(toStateVector(poseLower))
+    Bounds(const std::vector<double>& pose, const std::vector<double>& twist)
+    : poseUpperLimit(toStateVector(pose))
+    , poseLowerLimit(-poseUpperLimit)
     , twistLimit(toStateVector(twist))
     {
         if constexpr (std::is_same<StateVector, double>::value) {

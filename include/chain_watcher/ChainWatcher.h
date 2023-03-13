@@ -17,13 +17,15 @@ private:
 
     std::vector<std::unique_ptr<VehicleWatcher>> watchers;
 
+    const std::string odomTopic;
+
 
     void addVehicle(const VehicleParam& param)
     {
         if (!idMap->insert(std::make_pair(param.publicId, numVehicles)).second) throw addition_error("Vehicle has already been added.");
         idList->push_back(param.publicId);
 
-        watchers.push_back(std::move(std::unique_ptr<VehicleWatcher>(new VehicleWatcher(param.name, bounds))));
+        watchers.push_back(std::move(std::unique_ptr<VehicleWatcher>(new VehicleWatcher(param.name, odomTopic, bounds))));
 
         numVehicles++;
     }
@@ -53,6 +55,7 @@ public:
     , stopVehiclesSrv(nh->serviceClient<std_srvs::Empty>("chain_controller/pause"))
     , bounds()
     , watchers()
+    , odomTopic(configProvider.getValueWithDefault<std::string>("/odom_topic", "odom"))
     {
         Boundaries initBounds;
         if (!configProvider.getValue("bounds/x/lower", initBounds.x.lower) ||

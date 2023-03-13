@@ -5,6 +5,7 @@
 #include <memory>
 #include "ChildVehicleEstimator.h"
 #include <hippo_chain/include/chain_estimator/joint_model/RevoluteJointModel.h>
+#include <hippo_chain/include/chain_estimator/joint_model/UniversalJointModel.h>
 
 
 namespace ChildFactory
@@ -13,6 +14,9 @@ namespace ChildFactory
     {
         if (jointType == RevoluteJointModel::jointTypeName)
             return std::make_shared<ChildVehicleEstimator<RevoluteJointModel>>(parent, name);
+
+        if (jointType == UniversalJointModel::jointTypeName)
+            return std::make_shared<ChildVehicleEstimator<UniversalJointModel>>(parent, name);
 
         /* Add others like
         if (jointType == SomeOtherJointModel::jointTypeName)

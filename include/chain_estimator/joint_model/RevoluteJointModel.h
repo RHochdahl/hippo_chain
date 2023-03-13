@@ -8,6 +8,9 @@
 #include <hippo_chain/include/chain_estimator/kalman_filter/KalmanFilter.h>
 
 
+#define USE_KALMAN_FILTER
+
+
 /**
  * @brief 1D-revolute joint located on the x-axis of the robot
  * 
@@ -15,19 +18,15 @@
 class RevoluteJointModel : public JointModel<1>
 {
 private:
-    enum Axis
-    {
-        undefined = 0,
-        x = 1,
-        y = 2,
-        z = 3
-    } axis;                 // axis of rotation
+    Axis axis;              // axis of rotation
     double jointPosX;       // x-coordinates of joint in child frame
 
     double phiMeas;
     double omegaMeas;
 
+#ifdef USE_KALMAN_FILTER
     KalmanFilter<1> filter;
+#endif  // USE_KALMAN_FILTER
 
 
 public:
@@ -35,14 +34,13 @@ public:
 
 
     RevoluteJointModel(const std::shared_ptr<ConfigProvider>& configProvider)
+#ifdef USE_KALMAN_FILTER
     : filter()
+#endif  // USE_KALMAN_FILTER
     {
         int axisInt;
-        double poseLim, twistLim;
         if (!(configProvider->getValue("joint/x_pos", jointPosX) &&
-              configProvider->getValue("joint/axis", axisInt) &&
-              configProvider->getValue("joint/bounds/pose", poseLim) &&
-              configProvider->getValue("joint/bounds/twist", twistLim)))
+              configProvider->getValue("joint/axis", axisInt)))
             ROS_FATAL("Could not retrieve joint parameters!");
         axis = static_cast<Axis>(axisInt);
     }
@@ -101,10 +99,15 @@ public:
 
     void executeFilter()
     {
+#ifdef USE_KALMAN_FILTER
         const Eigen::Vector2d meas(phiMeas, omegaMeas);
         const Eigen::Vector2d belief = filter.update(meas);
         theta = belief(0);
         zeta = belief(1);
+#else  // USE_KALMAN_FILTER
+        theta = thetaMeas;
+        zeta = zetaMeas;
+#endif  // USE_KALMAN_FILTER
     }
 };
 

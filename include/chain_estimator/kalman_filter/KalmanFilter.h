@@ -8,8 +8,17 @@
 #include <hippo_chain/KalmanFilterConfig.h>
 
 
+class KalmanFilterManager
+{
+protected:
+    typedef boost::function<void(const hippo_chain::KalmanFilterConfig &, uint32_t)> CallbackType;
+
+    static inline std::unique_ptr<DynamicReconfigureManager<hippo_chain::KalmanFilterConfig>> dynamicReconfigureManager;
+};
+
+
 template<std::size_t Dim>
-class KalmanFilter
+class KalmanFilter : public KalmanFilterManager
 {
 private:
     typedef Eigen::Matrix<double,2*Dim,1> Vector;
@@ -25,10 +34,7 @@ private:
     Matrix measurementCov;
     Matrix stateTransitionMatrix;
 
-    typedef boost::function<void(const hippo_chain::KalmanFilterConfig &, uint32_t)> CallbackType;
     CallbackType f;
-
-    static inline std::unique_ptr<DynamicReconfigureManager<hippo_chain::KalmanFilterConfig>> dynamicReconfigureManager;
 
 
     void updateParameters(const hippo_chain::KalmanFilterConfig& config, uint32_t level)

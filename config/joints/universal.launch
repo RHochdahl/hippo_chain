@@ -1,18 +1,18 @@
 <?xml version="1.0"?>
 <launch>
-    <param name="type"  value="revolute"    type="string" />
-    <param name="dof"   value="1"           type="int" />
+    <param name="type"  value="universal"   type="string" />
+    <param name="dof"   value="2"           type="int" />
 
     <arg name="ahead_of_parent" />
     <arg name="x_pos" default="0.275" />
-    <arg name="axis" default="3" />
+    <arg name="axes" default="[3,1]" />
 
     <param if="$(arg ahead_of_parent)" name="x_pos" value="$(eval -arg('x_pos'))" type="double" />
     <param unless="$(arg ahead_of_parent)" name="x_pos" value="$(arg x_pos)" type="double" />
-    <param name="axis" value="$(arg axis)" type="int" />
+    <rosparam param="axes" subst_value="True">$(arg axes)</rosparam>
 
     <group ns="bounds" >
-        <param name="pose"  value="2.5"     type="double" />
-        <param name="twist" value="2.5"     type="double" />
+        <rosparam param="pose">[2.5,3.15]</rosparam>
+        <rosparam param="twist">[2.5,2.5]</rosparam>
     </group>
 </launch>

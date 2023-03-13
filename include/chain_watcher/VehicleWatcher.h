@@ -45,9 +45,9 @@ private:
 
 
 public:
-    VehicleWatcher(const std::string& name, const std::shared_ptr<Boundaries const> bounds_ptr)
+    VehicleWatcher(const std::string& name, const std::string& topic, const std::shared_ptr<Boundaries const> bounds_ptr)
     : nh(name)
-    , sub(nh.subscribe("ground_truth/odom", 1, &VehicleWatcher::callback, this))
+    , sub(nh.subscribe(topic, 1, &VehicleWatcher::callback, this))
     , timer(nh.createTimer(ros::Rate(5.0), &VehicleWatcher::bark, this, true, false))
     , bounds(bounds_ptr)
     {}

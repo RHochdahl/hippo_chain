@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <launch>
+    <arg name="vehicles" default="" />
+
     <include ns="bounds" file="$(find hippo_chain)/config/environment/tank.launch" pass_all_args="true"/>
 
-    <node pkg="hippo_chain" type="hippo_chain_watcher_node" name="hippo_chain_watcher_node" output="screen" args="--vehicles uuv02 uuv03" required="true" />
+    <node pkg="hippo_chain" type="hippo_chain_watcher_node" name="hippo_chain_watcher_node" output="screen" args="--vehicles $(arg vehicles)" required="true" />
 </launch>

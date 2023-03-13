@@ -1,0 +1,129 @@
+#!/usr/bin/env python
+
+import rospy
+from hippo_chain.msg import ChainState, ChainVehicleState
+import numpy as np
+import tf.transformations as tf
+from dynamic_reconfigure.server import Server
+from hippo_chain.cfg import GripperTargetConfig as Config
+import threading
+
+class Node():
+    def __init__(self) -> None:
+        rospy.init_node("setpoint_publisher")
+
+        self.__extend = False
+        self.__x = 1.0
+        self.__y = 2.5
+        self.__z = -1.0
+        self.__yaw = 0.5*np.pi
+        self.__pitch = 0.3*np.pi
+        self.__roll = np.pi
+        self.__offset = 0.19
+        self.__data_lock = threading.RLock()
+        self.__srv = Server(Config, self.__callback)
+        self.__setpoint_pub = rospy.Publisher("/chain/target", ChainState, queue_size=1)
+
+    def __callback(self, config, level):
+        with self.__data_lock:
+            if config['update']:
+                self.__extend = config['shape'] == Config.GripperTarget_Extend
+                self.__x = config['x']
+                self.__y = config['y']
+                self.__z = config['z']
+                self.__roll = np.pi/180 * config['roll']
+                self.__pitch = np.pi/180 * config['pitch']
+                self.__yaw = np.pi/180 * config['yaw']
+                config['update'] = False
+        return config
+
+    def __getOperationStateTarget(self):
+        data = []
+
+        if abs(self.__pitch) < 1e-3 and abs(self.__roll) < 1e-3:
+            alpha = -np.pi/6
+            beta = 0.0
+            qw = np.cos(0.5*self.__yaw)
+            qx = 0.0
+            qy = 0.0
+            qz = np.sin(0.5*self.__yaw)
+            x = self.__x - self.__offset * np.cos(self.__yaw)
+            y = self.__y - self.__offset * np.sin(self.__yaw)
+            z = self.__z
+        else:
+            R = tf.euler_matrix(self.__yaw, self.__pitch, self.__roll, "rzyx")
+            [x, y, z] = np.array([self.__x, self.__y, self.__z]) - R[:3, :3] @ np.array([self.__offset, 0.0, 0.0])
+            [qx, qy, qz, qw] = tf.quaternion_from_matrix(R)
+            [trash, beta, alpha] = tf.euler_from_matrix(R, "rzxz")
+
+        base_vehicle = ChainVehicleState()
+        base_vehicle.pose = [x, y, z, qw, qx, qy, qz]
+        base_vehicle.twist = [0.0] * 6
+        base_vehicle.vehicle_id = 0
+
+        data.append(base_vehicle)
+
+        child_vehicle_1 = ChainVehicleState()
+        child_vehicle_1.vehicle_id = 1
+        child_vehicle_1.pose = [alpha, beta]
+        child_vehicle_1.twist = [0.0]*2
+        
+        data.append(child_vehicle_1)
+
+        for i in range(2):
+            child_vehicle_i = ChainVehicleState()
+            child_vehicle_i.vehicle_id = 2+i
+            child_vehicle_i.pose = [2*np.pi/3]
+            child_vehicle_i.twist = [0.0]
+            
+            data.append(child_vehicle_i)
+
+        return data
+
+    def __getExtendedStateTarget(self):
+        data = []
+
+        base_vehicle = ChainVehicleState()
+        base_vehicle.pose = [self.__x-self.__offset*np.cos(self.__yaw), self.__y-self.__offset*np.sin(self.__yaw), self.__z, np.cos(0.5*self.__yaw), 0.0, 0.0, np.sin(0.5*self.__yaw)]
+        base_vehicle.twist = [0.0] * 6
+        base_vehicle.vehicle_id = 0
+
+        data.append(base_vehicle)
+
+        child_vehicle_1 = ChainVehicleState()
+        child_vehicle_1.vehicle_id = 1
+        child_vehicle_1.pose = [0.0, 0.0]
+        child_vehicle_1.twist = [0.0]*2
+        
+        data.append(child_vehicle_1)
+
+        for i in range(2):
+            child_vehicle_i = ChainVehicleState()
+            child_vehicle_i.vehicle_id = 2+i
+            child_vehicle_i.pose = [0.0]
+            child_vehicle_i.twist = [0.0]
+            
+            data.append(child_vehicle_i)
+
+        return data
+
+    def run(self):
+        r = rospy.Rate(10.0)
+        while not rospy.is_shutdown():
+            msg = ChainState()
+            if self.__extend:
+                msg.data = self.__getExtendedStateTarget()
+            else:
+                msg.data = self.__getOperationStateTarget()
+            msg.header.stamp = rospy.Time.now()
+            self.__setpoint_pub.publish(msg)
+
+            r.sleep()
+
+
+def main():
+    n = Node()
+    n.run()
+
+if __name__ == "__main__":
+    main()

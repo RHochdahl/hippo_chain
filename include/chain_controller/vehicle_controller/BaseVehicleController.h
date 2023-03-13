@@ -6,7 +6,7 @@
 #include <hippo_chain/FixBase.h>
 
 
-#define IGNORE_Z_ERROR
+// #define IGNORE_Z_ERROR
 
 
 class BaseVehicleController : public VehicleController
@@ -65,8 +65,8 @@ private:
         debugger.addEntry("desired pose", desiredState->pose.data(), desiredState->pose.size());
         debugger.addEntry("desired twist", desiredState->twist.data(), desiredState->twist.size());
 
-        if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows<4>())) throw quaternion_error();
-        if (!shared::isUnitQuaternion(poseAbs.bottomRows<4>())) throw quaternion_error();
+        if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows<4>())) throw quaternion_error(controllerStates.desiredPose.bottomRows<4>());
+        if (!shared::isUnitQuaternion(poseAbs.bottomRows<4>())) throw quaternion_error(poseAbs.bottomRows<4>());
 
         const double rQuatDes = controllerStates.desiredPose[3];
         const Eigen::Vector3d iQuatDes = controllerStates.desiredPose.bottomRows<3>();

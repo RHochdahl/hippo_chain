@@ -1,0 +1,17 @@
+bool,update,0
+bool,save_config,0
+bool,clear,0
+bool,reset_to_default,0
+double,kP,1.000000
+double,kSat,0.100000
+double,lim,0.500000
+double,kSigma1,0.300000
+double,kSigma2,0.500000
+double,maxPositionError,5.000000
+double,maxQuaternionError,1.000000
+double,kSigma,0.300000
+double,maxAngularError,3.140000
+group,Default,1,0,0
+group,All_Controllers,1,1,0
+group,BaseController,1,2,0
+group,ChildControllers,1,3,0

@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <arg name="base_file" value="$(find hippo_chain)/config/controller/vehicle/vehicle_controller.launch" />
-
-    <param name="dynamic_reconfigure_dir" value="$(find hippo_chain)/cfg/" />
-
-    <include ns="uuv00" file="$(arg base_file)" />
-</launch>

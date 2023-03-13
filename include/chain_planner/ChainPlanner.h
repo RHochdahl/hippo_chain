@@ -211,11 +211,11 @@ private:
             hippo_chain::ChainVehicleState childState;
             childState.vehicle_id = idList->at(i);
             childState.pose = std::vector<double>(dofList[i]);
-            childState.pose.front() = -std::max(std::min(angle, maxAngle), -maxAngle) * jointPosSignList[i];
-            for (auto it=childState.pose.begin()+1, end=childState.pose.end(); it<end; it++) *it = 0;
+            childState.pose.back() = -std::max(std::min(angle, maxAngle), -maxAngle) * jointPosSignList[i];
+            for (auto it=childState.pose.begin(), end=childState.pose.end(); it<end-1; it++) *it = 0;
             childState.twist = std::vector<double>(dofList[i]);
-            childState.twist.front() = -omega * jointPosSignList[i];
-            for (auto it=childState.twist.begin()+1, end=childState.twist.end(); it<end; it++) *it = 0;
+            childState.twist.back() = -omega * jointPosSignList[i];
+            for (auto it=childState.twist.begin(), end=childState.twist.end(); it<end-1; it++) *it = 0;
             visuals[i]->set(childState.pose);
             msg.data[i] = childState;
         }

@@ -11,6 +11,16 @@
 template<std::size_t dof>
 class JointModel
 {
+protected:
+    enum Axis
+    {
+        undefined = 0,
+        x = 1,
+        y = 2,
+        z = 3
+    };
+
+
 public:
     static constexpr int DOF = dof;
     typedef typename std::conditional<DOF == 1, double, Eigen::Matrix<double, DOF, 1>>::type JointVector;

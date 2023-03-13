@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="simulate" value="true" />
+    <arg name="num_vehicles" value="4" />
+    <arg name="fix_base" value="false" />
+    <param name="fix_base" value="$(arg fix_base)" />
+    <arg name="vehicles" default="uuv00 uuv01 uuv02 uuv03" />
+
+    <arg name="rate" default="50.0" />
+
+    <arg name="x" default="0.85" />
+    <arg name="y" default="2.5" />
+    <arg name="z" default="-0.5" />
+    <arg name="Y" default="1.57" />
+    <arg name="P" default="0.0" />
+    <arg name="R" default="0.0" />
+
+
+    <arg name="base_file" value="$(find hippo_chain)/config/controller/vehicle/vehicle_controller.launch" />
+    <arg name="child_file" value="$(find hippo_chain)/config/controller/vehicle/child_vehicle_controller.launch" />
+
+    <param name="dynamic_reconfigure_dir" value="$(find hippo_chain)/cfg/" />
+
+
+    <include ns="uuv00" file="$(arg base_file)" />
+
+    <include ns="uuv01" file="$(arg child_file)" >
+        <arg name="ahead_of_parent" value="false" />
+        <arg name="parent" value="uuv00" />
+        <arg name="joint_type" value="universal" />
+    </include>
+
+    <include ns="uuv02" file="$(arg child_file)" >
+        <arg name="ahead_of_parent" value="false" />
+        <arg name="parent" value="uuv01" />
+    </include>
+
+    <include ns="uuv03" file="$(arg child_file)" >
+        <arg name="ahead_of_parent" value="false" />
+        <arg name="parent" value="uuv02" />
+    </include>
+
+
+    <param name="/odom_topic" value="ground_truth/odom" />
+
+    <include file="$(find hippocampus_sim)/launch/top_vehicle_chain_complete.launch" >
+        <arg name="num_vehicles" value="$(arg num_vehicles)" />
+        <arg name="vehicles" value="$(arg vehicles)" />
+        <arg name="fix_base" value="$(arg fix_base)" />
+        <arg name="spawn" value="false" />
+    </include>
+    <arg name="vehicle" value="uuv_hippocampus_chain" />
+    <node name="$(arg vehicle)_spawn" output="screen" pkg="gazebo_ros" type="spawn_model" args="-sdf -file $(find hippocampus_sim)/models/$(arg vehicle)/$(arg vehicle).sdf -model $(arg vehicle) -x $(arg x) -y $(arg y) -z $(arg z) -R $(arg R) -P $(arg P) -Y $(arg Y)" />
+
+    <node pkg="hippo_chain" type="hippo_chain_controller_node" name="hippo_chain_controller_node" output="screen" args="-r $(arg rate) --vehicles $(arg vehicles)" />
+    <node pkg="hippo_chain" type="hippo_chain_estimator_node" name="hippo_chain_estimator_node" output="screen" args="-r $(arg rate) --vehicles $(arg vehicles)" />
+    <node pkg="hippo_chain" type="hippo_chain_gripper_target_publisher" name="hippo_chain_gripper_target_publisher" output="screen" />
+</launch>

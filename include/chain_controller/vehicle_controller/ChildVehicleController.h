@@ -104,10 +104,11 @@ public:
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
         debugger.addEntry("bounded desired pose", controllerStates.thetaDes);
         debugger.addEntry("bounded desired twist", controllerStates.zetaDes);
-        const double angleError = limitError(controllerStates.thetaDes - jointModel.theta, param.maxAngularError);
-        const double twistError = controllerStates.zetaDes - jointModel.zeta;
+        const typename JointModel::JointVector angleError = limitError(typename JointModel::JointVector(controllerStates.thetaDes - jointModel.theta), param.maxAngularError);
+        const typename JointModel::JointVector twistError = controllerStates.zetaDes - jointModel.zeta;
         controllerStates.sigma = controllerStates.zetaDes + param.kSigma * angleError;
 
+/*
         {
             hippo_chain::Error errorMsg;
             errorMsg.header.stamp = ros::Time::now();
@@ -119,6 +120,7 @@ public:
             errorMsg.twist_error = twistError;
             error_pub.publish(errorMsg);
         }
+*/
 
         controllerStates.sigmaDot = param.kSigma * twistError;
         debugger.addEntry("sigma", controllerStates.sigma);
