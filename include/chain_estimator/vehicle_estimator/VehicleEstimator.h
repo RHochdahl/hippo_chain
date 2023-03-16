@@ -38,6 +38,11 @@ public:
     , timedOut(true)
     {}
 
+    ~VehicleEstimator()
+    {
+        nh->shutdown();
+    }
+
     void callback(const nav_msgs::Odometry& msg)
     {
         timer.stop();

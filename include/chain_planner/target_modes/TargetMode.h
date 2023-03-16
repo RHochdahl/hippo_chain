@@ -32,7 +32,10 @@ public:
     , finished(false)
     {}
 
-    ~TargetMode() = default;
+    ~TargetMode()
+    {
+        nh.shutdown();
+    }
 
 
     virtual bool set()

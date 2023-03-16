@@ -89,8 +89,7 @@ public:
         debugger.addEntry("desired eta", eta);
 
         Q.noalias() = B.transpose() * B;
-        const double penalty = 1e-5*Q.diagonal().maxCoeff();
-        Q.diagonal().array() += penalty;
+        Q.diagonal().array() += controlPenalty;
         q.noalias() = -B.transpose() * eta;
 
         debugger.addEntry("Q", Q);

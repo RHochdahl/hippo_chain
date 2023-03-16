@@ -12,6 +12,7 @@
 #include <hippo_chain/include/chain_controller/least_squares_solver/LeastSquaresSolver.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/LQPSolver.h>
 #include <hippo_chain/include/chain_controller/least_squares_solver/MatlabLSQSolver.h>
+#include <hippo_chain/include/chain_controller/least_squares_solver/MatlabLSQSolver2.h>
 #include <hippo_chain/include/chain_controller/vehicle_controller/VehicleController.h>
 #include <hippo_chain/include/chain_controller/vehicle_controller/BaseVehicleController.h>
 #include <hippo_chain/include/chain_controller/vehicle_controller/ChildVehicleController.h>
@@ -192,6 +193,8 @@ public:
 
         lsqSolver.reset(new MatlabLSQSolver(4*numVehicles));
         inputProvider.reset(new InputProvider(idMap));
+
+        modified = false;
 
         nu = Eigen::VectorXd::Zero(4*numVehicles);
         B = Eigen::MatrixXd::Zero(totalDof, 4*numVehicles);

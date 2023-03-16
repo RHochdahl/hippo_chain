@@ -239,7 +239,7 @@ public:
     , targetPub(nh->advertise<hippo_chain::ChainState>("chain/target", 1))
     , jointPosSignList()
     , basePosOffset()
-    , server(ros::NodeHandle("ChainPlanner"))
+    , server(ros::NodeHandle(*nh, "ChainPlanner"))
     , f(boost::bind(&ChainPlanner::reconfigureCallback, this, _1, _2))
     , msg()
     , visuals()

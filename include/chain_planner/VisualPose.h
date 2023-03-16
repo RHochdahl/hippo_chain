@@ -21,8 +21,6 @@ private:
 
 
 public:
-
-
     VisualPose(const std::string& ns, const double jointPos=std::nan("base"), std::shared_ptr<VisualPose> parent=nullptr)
     : nh(ns)
     , pub(nh.advertise<geometry_msgs::PoseStamped>("target_pose", 1, true))
@@ -38,7 +36,10 @@ public:
         else poseVec = {0.0};
     }
 
-    ~VisualPose() = default;
+    ~VisualPose()
+    {
+        nh.shutdown();
+    }
 
     void publish()
     {

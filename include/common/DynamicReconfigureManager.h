@@ -27,6 +27,7 @@ private:
     typedef boost::function<void(const ConfigType &, uint32_t)> ConstCallbackType;
 
     const std::string name;
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<ConfigType> server;
     CallbackType f;
     std::map<const void* const, ConstCallbackType> callbacks;
@@ -224,7 +225,8 @@ private:
 public:
     DynamicReconfigureManager(const std::string& name, const ConfigType* const initConfig = nullptr, const std::string& configFilePath = "")
     : name(name)
-    , server(ros::NodeHandle(name))
+    , nh(name)
+    , server(nh)
     , f(boost::bind(&DynamicReconfigureManager::callback, this, _1, _2))
     , callbacks()
     , lastConfig()
@@ -250,7 +252,9 @@ public:
     {}
 
     ~DynamicReconfigureManager()
-    {}
+    {
+        nh.shutdown();
+    }
 
 
     bool registerCallback(const ConstCallbackType& cb, const void* const obj)

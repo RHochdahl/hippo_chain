@@ -7,6 +7,7 @@ import tf.transformations as tf
 from dynamic_reconfigure.server import Server
 from hippo_chain.cfg import GripperTargetConfig as Config
 import threading
+from geometry_msgs.msg import PoseStamped
 
 class Node():
     def __init__(self) -> None:
@@ -23,6 +24,7 @@ class Node():
         self.__data_lock = threading.RLock()
         self.__srv = Server(Config, self.__callback)
         self.__setpoint_pub = rospy.Publisher("/chain/target", ChainState, queue_size=1)
+        self.__target_pose_pub = rospy.Publisher("/chain/target_pose", PoseStamped, queue_size=1)
 
     def __callback(self, config, level):
         with self.__data_lock:
@@ -40,21 +42,10 @@ class Node():
     def __getOperationStateTarget(self):
         data = []
 
-        if abs(self.__pitch) < 1e-3 and abs(self.__roll) < 1e-3:
-            alpha = -np.pi/6
-            beta = 0.0
-            qw = np.cos(0.5*self.__yaw)
-            qx = 0.0
-            qy = 0.0
-            qz = np.sin(0.5*self.__yaw)
-            x = self.__x - self.__offset * np.cos(self.__yaw)
-            y = self.__y - self.__offset * np.sin(self.__yaw)
-            z = self.__z
-        else:
-            R = tf.euler_matrix(self.__yaw, self.__pitch, self.__roll, "rzyx")
-            [x, y, z] = np.array([self.__x, self.__y, self.__z]) - R[:3, :3] @ np.array([self.__offset, 0.0, 0.0])
-            [qx, qy, qz, qw] = tf.quaternion_from_matrix(R)
-            [trash, beta, alpha] = tf.euler_from_matrix(R, "rzxz")
+        R = tf.euler_matrix(self.__yaw, self.__pitch, self.__roll, "rzyx")
+        [x, y, z] = np.array([self.__x, self.__y, self.__z]) - self.__offset * R[:3, 0]
+        [qx, qy, qz, qw] = tf.quaternion_from_matrix(R)
+        # [alpha, beta, trash] = tf.euler_from_matrix(np.transpose(R), "rxyz")
 
         base_vehicle = ChainVehicleState()
         base_vehicle.pose = [x, y, z, qw, qx, qy, qz]
@@ -65,7 +56,7 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [alpha, beta]
+        child_vehicle_1.pose = [-self.__roll, -self.__pitch]
         child_vehicle_1.twist = [0.0]*2
         
         data.append(child_vehicle_1)
@@ -92,7 +83,7 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [0.0, 0.0]
+        child_vehicle_1.pose = [0.0]*2
         child_vehicle_1.twist = [0.0]*2
         
         data.append(child_vehicle_1)
@@ -117,6 +108,18 @@ class Node():
                 msg.data = self.__getOperationStateTarget()
             msg.header.stamp = rospy.Time.now()
             self.__setpoint_pub.publish(msg)
+
+            pose_msg = PoseStamped()
+            pose_msg.header.stamp = rospy.Time.now()
+            pose_msg.header.frame_id = "map"
+            pose_msg.pose.position.x = self.__x
+            pose_msg.pose.position.y = self.__y
+            pose_msg.pose.position.z = self.__z
+            pose_msg.pose.orientation.w = msg.data[0].pose[3]
+            pose_msg.pose.orientation.x = msg.data[0].pose[4]
+            pose_msg.pose.orientation.y = msg.data[0].pose[5]
+            pose_msg.pose.orientation.z = msg.data[0].pose[6]
+            self.__target_pose_pub.publish(pose_msg)
 
             r.sleep()
 

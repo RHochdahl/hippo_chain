@@ -22,6 +22,11 @@ public:
     , msg()
     {}
 
+    ~Debugger()
+    {
+        nh.shutdown();
+    }
+
 
     template<typename T>
     void addEntry(const std::string& name, const T& obj)

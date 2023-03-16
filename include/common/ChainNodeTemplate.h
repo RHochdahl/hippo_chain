@@ -148,7 +148,9 @@ public:
     }
 
     ~ChainNodeTemplate()
-    {}
+    {
+        nh->shutdown();
+    }
 
     virtual void spin() = 0;
 };

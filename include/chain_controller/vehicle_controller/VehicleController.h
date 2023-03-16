@@ -96,6 +96,7 @@ public:
             stopThrusters();
         }
         dynamicReconfigureManager->removeCallback(this);
+        nh->shutdown();
     }
 
 

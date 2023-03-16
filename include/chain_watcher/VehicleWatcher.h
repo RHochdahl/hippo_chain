@@ -52,7 +52,10 @@ public:
     , bounds(bounds_ptr)
     {}
 
-    ~VehicleWatcher() {}
+    ~VehicleWatcher()
+    {
+        nh.shutdown();
+    }
 
 
     std::string getName() const

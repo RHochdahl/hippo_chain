@@ -24,6 +24,11 @@ public:
     , targetSub(nh, idMap)
     {}
 
+    ~InputProvider()
+    {
+        nh.shutdown();
+    }
+
     bool hasNewInputs() const
     {
         return stateSub.hasNewInputs() || targetSub.hasNewInputs();

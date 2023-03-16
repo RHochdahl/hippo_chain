@@ -7,13 +7,15 @@
 #include <iostream>
 #include "LeastSquaresSolver.h"
 
+#include <Eigen/Dense>
+
 #include <cstddef>
 #include <cstdlib>
 
 // Matlab
-#include <hippo_chain/lib/matlab_lsq_solver/LSQSolver.h>
-#include <hippo_chain/lib/matlab_lsq_solver/rtwtypes.h>
+#include <hippo_chain/lib/matlab_lsq_solver/active-set/LSQSolver.h>
 #include <hippo_chain/lib/matlab_lsq_solver/rt_nonfinite.h>
+#include <hippo_chain/lib/matlab_lsq_solver/rtwtypes.h>
 #include <hippo_chain/lib/matlab_lsq_solver/coder_array.h>
 
 
@@ -26,6 +28,9 @@ private:
     coder::array<double, 1U> b;
     coder::array<double, 1U> x;
     coder::array<double, 1U> x0;
+
+    Eigen::MatrixXd A_eigen;
+    Eigen::VectorXd b_eigen;
 
 
     static inline coder::array<double, 1U> EigenVec2MatlabArray(Eigen::VectorXd& vec)
@@ -42,6 +47,14 @@ private:
         return result;
     }
 
+    void updateParameters(const hippo_chain::LeastSquaresConfig& config, uint32_t level) override
+    {
+        if (!level) return;
+        controlPenalty = std::pow(10, config.penalty);
+        A_eigen.bottomRows(SIZE).diagonal().fill(controlPenalty);
+        ROS_INFO("Updated LSQ-Parameters");
+    }
+
 
 public:
     MatlabLSQSolver(const int size)
@@ -51,40 +64,49 @@ public:
     , b()
     , x()
     , x0()
+    , A_eigen(controlPenalty*Eigen::MatrixXd::Identity(SIZE, SIZE))
+    , b_eigen(Eigen::VectorXd::Zero(SIZE))
     {
         x0.set_size(SIZE);
         for (auto it=x0.begin(), end=x0.end(); it!=end; it++) *it = 0;
+
+        A.set(A_eigen.data(), static_cast<int>(A_eigen.rows()), static_cast<int>(A_eigen.cols()));
+
+        b.set(b_eigen.data(), static_cast<int>(b_eigen.rows()));
     }
 
 
-    void solve(const Eigen::MatrixXd& B,
-               const Eigen::VectorXd& eta,
-               Eigen::VectorXd& nu)
+    void solve(const Eigen::MatrixXd& A_,
+               const Eigen::VectorXd& b_,
+               Eigen::VectorXd& x_)
     {
-        assert(B.rows() == eta.rows());
-        assert(B.cols() == SIZE);
-        assert(nu.rows() == SIZE);
+        assert(A_.rows() == b_.rows());
+        assert(A_.cols() == SIZE);
+        assert(x_.rows() == SIZE);
 
-        Eigen::MatrixXd B_(B.rows()+B.cols(), B.cols());
-        B_.block(0, 0, B.rows(), B.cols()) = B;
-        B_.block(B.rows(), 0, B.cols(), B.cols()) = 1e-4 * B.maxCoeff() * Eigen::MatrixXd::Identity(B.cols(), B.cols());
-        Eigen::VectorXd eta_(eta.rows()+B.cols());
-        eta_.topRows(eta.rows()) = eta;
-        eta_.bottomRows(B.cols()).fill(0.0);
+        if (A_.rows()+SIZE == A_eigen.rows()) {
+            A_eigen.topRows(A_.rows()) = A_;
+            b_eigen.topRows(b_.rows()) = b_;
+        } else {
+            A_eigen.resize(A_.rows()+SIZE, SIZE);
+            b_eigen.resize(b_.rows()+SIZE);
+            A_eigen.topRows(A_.rows()) = A_;
+            b_eigen.topRows(b_.rows()) = b_;
+            A_eigen.bottomRows(SIZE) = controlPenalty*Eigen::MatrixXd::Identity(SIZE, SIZE);
+            b_eigen.bottomRows(SIZE) = Eigen::VectorXd::Zero(SIZE);
+            A.set(A_eigen.data(), static_cast<int>(A_eigen.rows()), static_cast<int>(A_eigen.cols()));
+            b.set(b_eigen.data(), static_cast<int>(b_eigen.rows()));
+        }
 
 #ifndef NDEBUG
         const clock_t begin_time = clock();
 
         debugger.addEntry("Size", SIZE);
-        debugger.addEntry("B", B);
-        debugger.addEntry("desired eta", eta);
+        debugger.addEntry("A", A_);
+        debugger.addEntry("desired b", b_);
 #endif  // NDEBUG
 
-        A.set(B_.data(), static_cast<int>(B_.rows()), static_cast<int>(B_.cols()));
-
-        b.set(eta_.data(), static_cast<int>(eta_.rows()));
-
-        x.set(nu.data(), SIZE);
+        x.set(x_.data(), SIZE);
 
         solver.solveLSQ(A, b, x0, x);
 
@@ -92,11 +114,11 @@ public:
 
 #ifndef NDEBUG
         double time = double(clock() - begin_time) * (1000.0/CLOCKS_PER_SEC);
-        auto etaActual = B*nu;
-        auto error = etaActual-eta;
+        auto bActual = A_*x_;
+        auto error = bActual-b_;
 
-        debugger.addEntry("nu", nu);
-        debugger.addEntry("actual eta", etaActual);
+        debugger.addEntry("x", x_);
+        debugger.addEntry("actual b", bActual);
         debugger.addEntry("error", error);
         debugger.addEntry("error norm", error.norm());
         debugger.addEntry("Solve time (in ms)", time);

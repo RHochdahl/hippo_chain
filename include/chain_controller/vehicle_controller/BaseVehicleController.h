@@ -85,11 +85,13 @@ private:
         debugger.addEntry("epsilon error", epsilonErr);
         debugger.addEntry("eta error", etaErr);
 
+        const double k = 2.0 * param.kSigma2 / etaErr;
+
         const Eigen::Vector3d xiLinDes = R_1_0 * controllerStates.desiredTwist.topRows<3>();
         const Eigen::Vector3d xiAngDes = R_1_0 * controllerStates.desiredTwist.bottomRows<3>();
 
         controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * posErr;
-        controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
+        controllerStates.sigma.bottomRows<3>() = xiAngDes + k * epsilonErr;
         debugger.addEntry("sigma/beta", controllerStates.sigma);
 
         // Requirement: des twist in world frame, actual twist in base frame
@@ -105,7 +107,7 @@ private:
         const Eigen::Vector3d xiAngDesDot = xiAngDes.cross(xiAbs.bottomRows<3>());
 
         controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
-        controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * param.kSigma2 * epsilonErrDot_2;
+        controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * k * epsilonErrDot_2;
         debugger.addEntry("d/dt sigma/beta", controllerStates.sigmaDot);
 
 #ifdef IGNORE_Z_ERROR
