@@ -8,12 +8,21 @@ from dynamic_reconfigure.server import Server
 from hippo_chain.cfg import GripperTargetConfig as Config
 import threading
 from geometry_msgs.msg import PoseStamped
+from enum import Enum
+
+
+class Mode(Enum):
+    UNDEFINED = 0
+    EXTEND = 1
+    OBSERVE = 2
+    INTERACT = 3
+
 
 class Node():
     def __init__(self) -> None:
         rospy.init_node("setpoint_publisher")
 
-        self.__extend = False
+        self.__mode = Mode.EXTEND
         self.__x = 1.0
         self.__y = 2.5
         self.__z = -1.0
@@ -29,7 +38,7 @@ class Node():
     def __callback(self, config, level):
         with self.__data_lock:
             if config['update']:
-                self.__extend = config['shape'] == Config.GripperTarget_Extend
+                self.__mode = Mode(int(config['mode']))
                 self.__x = config['x']
                 self.__y = config['y']
                 self.__z = config['z']
@@ -39,13 +48,13 @@ class Node():
                 config['update'] = False
         return config
 
-    def __getOperationStateTarget(self):
+    def __getInteractionStateTarget(self):
         data = []
 
         R = tf.euler_matrix(self.__yaw, self.__pitch, self.__roll, "rzyx")
         [x, y, z] = np.array([self.__x, self.__y, self.__z]) - self.__offset * R[:3, 0]
         [qx, qy, qz, qw] = tf.quaternion_from_matrix(R)
-        # [alpha, beta, trash] = tf.euler_from_matrix(np.transpose(R), "rxyz")
+        [alpha, beta, trash] = tf.euler_from_matrix(np.transpose(R), "rzxz")
 
         base_vehicle = ChainVehicleState()
         base_vehicle.pose = [x, y, z, qw, qx, qy, qz]
@@ -56,12 +65,39 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [-self.__roll, -self.__pitch]
+        child_vehicle_1.pose = [alpha, beta]
         child_vehicle_1.twist = [0.0]*2
         
         data.append(child_vehicle_1)
 
-        for i in range(2):
+        for i in range(1):
+            child_vehicle_i = ChainVehicleState()
+            child_vehicle_i.vehicle_id = 2+i
+            child_vehicle_i.pose = [2*np.pi/3]
+            child_vehicle_i.twist = [0.0]
+            
+            data.append(child_vehicle_i)
+
+        return data
+    
+    def __getObservationStateTarget(self):
+        data = []
+
+        base_vehicle = ChainVehicleState()
+        base_vehicle.pose = [self.__x-self.__offset*np.cos(self.__yaw), self.__y-self.__offset*np.sin(self.__yaw), self.__z, np.cos(0.5*self.__yaw), 0.0, 0.0, np.sin(0.5*self.__yaw)]
+        base_vehicle.twist = [0.0] * 6
+        base_vehicle.vehicle_id = 0
+
+        data.append(base_vehicle)
+
+        child_vehicle_1 = ChainVehicleState()
+        child_vehicle_1.vehicle_id = 1
+        child_vehicle_1.pose = [2*np.pi/3, 0.0]
+        child_vehicle_1.twist = [0.0]*2
+        
+        data.append(child_vehicle_1)
+
+        for i in range(1):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [2*np.pi/3]
@@ -88,7 +124,7 @@ class Node():
         
         data.append(child_vehicle_1)
 
-        for i in range(2):
+        for i in range(1):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [0.0]
@@ -102,10 +138,15 @@ class Node():
         r = rospy.Rate(10.0)
         while not rospy.is_shutdown():
             msg = ChainState()
-            if self.__extend:
+            if self.__mode == Mode.EXTEND:
                 msg.data = self.__getExtendedStateTarget()
+            elif self.__mode == Mode.OBSERVE:
+                msg.data = self.__getObservationStateTarget()
+            elif self.__mode == Mode.INTERACT:
+                msg.data = self.__getInteractionStateTarget()
             else:
-                msg.data = self.__getOperationStateTarget()
+                rospy.logerr("Unknown mode selected!")
+                continue
             msg.header.stamp = rospy.Time.now()
             self.__setpoint_pub.publish(msg)
 

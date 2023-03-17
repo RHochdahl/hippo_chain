@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="simulate" value="true" />
-    <arg name="num_vehicles" value="4" />
+    <arg name="num_vehicles" value="3" />
     <arg name="fix_base" value="false" />
     <param name="fix_base" value="$(arg fix_base)" />
-    <arg name="vehicles" default="uuv00 uuv01 uuv02 uuv03" />
+    <arg name="vehicles" default="uuv00 uuv01 uuv02" />
 
     <arg name="rate" default="50.0" />
 
@@ -33,11 +33,6 @@
     <include ns="uuv02" file="$(arg child_file)" >
         <arg name="ahead_of_parent" value="false" />
         <arg name="parent" value="uuv01" />
-    </include>
-
-    <include ns="uuv03" file="$(arg child_file)" >
-        <arg name="ahead_of_parent" value="false" />
-        <arg name="parent" value="uuv02" />
     </include>
 
 
