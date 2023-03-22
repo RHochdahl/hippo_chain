@@ -65,16 +65,16 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [alpha, beta]
-        child_vehicle_1.twist = [0.0]*2
+        child_vehicle_1.pose = [alpha, beta, 0.0, 0.0, 0.0, 0.0, 0.0]
+        child_vehicle_1.twist = [0.0]*6
         
         data.append(child_vehicle_1)
 
         for i in range(1):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
-            child_vehicle_i.pose = [2*np.pi/3]
-            child_vehicle_i.twist = [0.0]
+            child_vehicle_i.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            child_vehicle_i.twist = [0.0]*6
             
             data.append(child_vehicle_i)
 
@@ -92,16 +92,16 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [2*np.pi/3, 0.0]
-        child_vehicle_1.twist = [0.0]*2
+        child_vehicle_1.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        child_vehicle_1.twist = [0.0]*6
         
         data.append(child_vehicle_1)
 
         for i in range(1):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
-            child_vehicle_i.pose = [2*np.pi/3]
-            child_vehicle_i.twist = [0.0]
+            child_vehicle_i.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            child_vehicle_i.twist = [0.0]*6
             
             data.append(child_vehicle_i)
 
@@ -119,16 +119,16 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [0.0]*2
-        child_vehicle_1.twist = [0.0]*2
+        child_vehicle_1.pose = [0.0]*7
+        child_vehicle_1.twist = [0.0]*6
         
         data.append(child_vehicle_1)
 
         for i in range(1):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
-            child_vehicle_i.pose = [0.0]
-            child_vehicle_i.twist = [0.0]
+            child_vehicle_i.pose = [0.0]*7
+            child_vehicle_i.twist = [0.0]*6
             
             data.append(child_vehicle_i)
 

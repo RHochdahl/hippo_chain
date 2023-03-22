@@ -11,6 +11,8 @@
 
 #include <mavros_msgs/AttitudeTarget.h>
 
+#include <hippo_chain/Error.h>
+
 #include <hippo_chain/include/chain_controller/vehicle_model/VehicleModel.h>
 #include <hippo_chain/include/chain_controller/state/StateProvider.h>
 #include <hippo_chain/include/chain_controller/thruster_model/ThrusterModel.h>
@@ -28,6 +30,7 @@ public:
 protected:
     std::shared_ptr<ros::NodeHandle> nh;
     ros::Publisher pub;
+    ros::Publisher errorPub;
     Debugger debugger;
     std::shared_ptr<ConfigProvider> configProvider;
 
@@ -76,6 +79,7 @@ public:
     : ID(id)
     , nh(new ros::NodeHandle(name))
     , pub(nh->advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 1))
+    , errorPub(nh->advertise<hippo_chain::Error>("control_error", 1))
     , debugger(nh->getNamespace(), "debug_control")
     , configProvider(new ConfigProvider(nh))
     , vehicleModel(configProvider)
@@ -109,7 +113,7 @@ public:
     template<typename Derived>
     void setJointWrenches(const Eigen::MatrixBase<Derived>& jointWrench)
     {
-        debugger.addEntry("add to tau", jointWrench);
+        debugger.addEntry("add to tau", Eigen::Vector6d(jointWrench));
         tau.noalias() += jointWrench;
         debugger.addEntry("new tau", tau);
     }

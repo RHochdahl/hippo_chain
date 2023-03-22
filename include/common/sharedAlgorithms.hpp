@@ -29,6 +29,34 @@ namespace shared
     }
 
 
+    template<std::size_t N>
+    static inline boost::array<double, N> toArray(const double* data, const std::size_t size)
+    {
+        boost::array<double, N> ret;
+        std::copy(data, data+size, ret.data());
+        std::fill_n(ret.data()+size, N-size, 0.0);
+        return ret;
+    }
+
+    template<std::size_t N>
+    static inline boost::array<double, N> toArray(const double val)
+    {
+        return boost::array<double, N>({val});
+    }
+
+    template<std::size_t N, int M>
+    static inline boost::array<double, N> toArray(const Eigen::Matrix<double,M,1>& vec)
+    {
+        return toArray<N>(vec.data(), M);
+    }
+
+    template<std::size_t N>
+    static inline boost::array<double, N> toArray(const Eigen::VectorXd& vec)
+    {
+        return toArray<N>(vec.data(), vec.rows());
+    }
+
+
     static inline int getID(const std::string& name)
     {
         try

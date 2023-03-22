@@ -9,11 +9,12 @@
 class VisualPose
 {
 private:
+    const uint SIZE;
     ros::NodeHandle nh;
     ros::Publisher pub;
 
     geometry_msgs::PoseStamped pose;
-    std::vector<double> poseVec;
+    boost::array<double, 7> poseArr;
 
     std::shared_ptr<VisualPose> parent;
 
@@ -21,19 +22,20 @@ private:
 
 
 public:
-    VisualPose(const std::string& ns, const double jointPos=std::nan("base"), std::shared_ptr<VisualPose> parent=nullptr)
-    : nh(ns)
+    VisualPose(const std::string& ns, const uint size, const double jointPos=std::nan("base"), std::shared_ptr<VisualPose> parent=nullptr)
+    : SIZE(size)
+    , nh(ns)
     , pub(nh.advertise<geometry_msgs::PoseStamped>("target_pose", 1, true))
     , pose()
-    , poseVec()
+    , poseArr()
     , parent(parent)
     , jointPos(jointPos)
     {
         pose.header.frame_id = "map";
         pose.pose.orientation.w = 1.0;
 
-        if (parent == nullptr) poseVec = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0};
-        else poseVec = {0.0};
+        if (parent == nullptr) poseArr = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0};
+        else poseArr = {0.0};
     }
 
     ~VisualPose()
@@ -57,10 +59,10 @@ public:
         pose.pose = _pose;
     }
 
-    void set(const std::vector<double>& _pose)
+    void set(const boost::array<double, 7>& _pose)
     {
-        if ((_pose.size() == 7 && parent == nullptr) || (parent != nullptr)) {
-            poseVec = _pose;
+        if ((SIZE == 6 && parent == nullptr) || (parent != nullptr)) {
+            poseArr = _pose;
             refresh();
         } else ROS_ERROR("Could not set target pose for '%s'!", nh.getNamespace().c_str());
     }
@@ -68,21 +70,21 @@ public:
     void refresh()
     {
         if (parent == nullptr) {
-            assert(std::abs(poseVec[4]) < 1e-12);
-            assert(std::abs(poseVec[5]) < 1e-12);
-            pose.pose.position.x = poseVec[0];
-            pose.pose.position.y = poseVec[1];
-            pose.pose.position.z = poseVec[2];
-            pose.pose.orientation.w = poseVec[3];
-            pose.pose.orientation.x = poseVec[4];
-            pose.pose.orientation.y = poseVec[5];
-            pose.pose.orientation.z = poseVec[6];
+            assert(std::abs(poseArr[4]) < 1e-12);
+            assert(std::abs(poseArr[5]) < 1e-12);
+            pose.pose.position.x = poseArr[0];
+            pose.pose.position.y = poseArr[1];
+            pose.pose.position.z = poseArr[2];
+            pose.pose.orientation.w = poseArr[3];
+            pose.pose.orientation.x = poseArr[4];
+            pose.pose.orientation.y = poseArr[5];
+            pose.pose.orientation.z = poseArr[6];
         } else {
             auto parentPose = parent->get();
             assert(std::abs(parentPose.orientation.x) < 1e-12);
             assert(std::abs(parentPose.orientation.y) < 1e-12);
             assert(!std::isnan(jointPos));
-            const double angle = poseVec.back();
+            const double angle = poseArr.front();
             const double halfAngle = 0.5*angle;
             const double halfSin = std::sin(halfAngle);
             const double halfCos = std::cos(halfAngle);

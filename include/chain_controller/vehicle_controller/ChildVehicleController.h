@@ -5,6 +5,7 @@
 #include <memory>
 #include "VehicleController.h"
 #include <hippo_chain/Error.h>
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
 
 
 template<typename JointModel>
@@ -108,19 +109,17 @@ public:
         const typename JointModel::JointVector twistError = controllerStates.zetaDes - jointModel.zeta;
         controllerStates.sigma = controllerStates.zetaDes + param.kSigma * angleError;
 
-/*
         {
             hippo_chain::Error errorMsg;
-            errorMsg.header.stamp = ros::Time::now();
-            errorMsg.angle = jointModel.theta;
-            errorMsg.desired_angle = controllerStates.thetaDes;
-            errorMsg.angle_error = angleError;
-            errorMsg.twist = jointModel.zeta;
-            errorMsg.desired_twist = controllerStates.zetaDes;
-            errorMsg.twist_error = twistError;
-            error_pub.publish(errorMsg);
+            errorMsg.header.stamp       = ros::Time::now();
+            errorMsg.state.pose         = shared::toArray<7>(jointModel.theta);
+            errorMsg.state.twist        = shared::toArray<6>(jointModel.zeta);
+            errorMsg.des_state.pose     = shared::toArray<7>(controllerStates.thetaDes);
+            errorMsg.des_state.twist    = shared::toArray<6>(controllerStates.zetaDes);
+            errorMsg.error.pose         = shared::toArray<7>(angleError);
+            errorMsg.error.twist        = shared::toArray<6>(twistError);
+            errorPub.publish(errorMsg);
         }
-*/
 
         controllerStates.sigmaDot = param.kSigma * twistError;
         debugger.addEntry("sigma", controllerStates.sigma);

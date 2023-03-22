@@ -113,6 +113,21 @@ private:
 #ifdef IGNORE_Z_ERROR
         controllerStates.sigma(2) = controllerStates.sigmaDot(2) = 0.0;
 #endif  // IGNORE_Z_ERROR
+
+        {
+            hippo_chain::Error errorMsg;
+            errorMsg.header.stamp = ros::Time::now();
+            std::copy(poseAbs.data(), poseAbs.data()+7, errorMsg.state.pose.data());
+            std::copy(xiAbs.data(), xiAbs.data()+6, errorMsg.state.twist.data());
+            std::copy(controllerStates.desiredPose.data(), controllerStates.desiredPose.data()+7, errorMsg.des_state.pose.data());
+            std::copy(controllerStates.desiredTwist.data(), controllerStates.desiredTwist.data()+6, errorMsg.des_state.twist.data());
+            std::copy(posErr.data(), posErr.data()+3, errorMsg.error.pose.data());
+            errorMsg.error.pose[3] = etaErr;
+            std::copy(posErr.data()+4, posErr.data()+7, errorMsg.error.pose.data()+4);
+            std::copy(posErrDot.data(), posErrDot.data()+3, errorMsg.error.twist.data());
+            std::copy(omegaErr.data(), omegaErr.data()+3, errorMsg.error.twist.data()+3);
+            errorPub.publish(errorMsg);
+        }
     }
 
 

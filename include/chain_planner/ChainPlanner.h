@@ -59,7 +59,7 @@ private:
 
         addVehicle(param);
         basePosOffset = std::abs(param.jointPos)*std::tan(M_PI/6);
-        visuals.push_back(std::make_shared<VisualPose>(param.name, param.jointPos, visuals[idMap->at(param.parentId)]));
+        visuals.push_back(std::make_shared<VisualPose>(param.name, param.dof, param.jointPos, visuals[idMap->at(param.parentId)]));
     }
 
     void addBaseVehicle(const VehicleParam& param)
@@ -70,7 +70,7 @@ private:
         if (param.parentId != -1)       ROS_FATAL("Base vehicle has incorrect parent ID!");
 
         addVehicle(param);
-        visuals.push_back(std::make_shared<VisualPose>(param.name));
+        visuals.push_back(std::make_shared<VisualPose>(param.name, 6));
     }
 
     void reconfigureCallback(hippo_chain::ChainTargetConfig &config, uint32_t level)
@@ -210,12 +210,8 @@ private:
         for (int i=1; i<numVehicles; i++) {
             hippo_chain::ChainVehicleState childState;
             childState.vehicle_id = idList->at(i);
-            childState.pose = std::vector<double>(dofList[i]);
-            childState.pose.back() = -std::max(std::min(angle, maxAngle), -maxAngle) * jointPosSignList[i];
-            for (auto it=childState.pose.begin(), end=childState.pose.end(); it<end-1; it++) *it = 0;
-            childState.twist = std::vector<double>(dofList[i]);
-            childState.twist.back() = -omega * jointPosSignList[i];
-            for (auto it=childState.twist.begin(), end=childState.twist.end(); it<end-1; it++) *it = 0;
+            childState.pose = {-std::max(std::min(angle, maxAngle), -maxAngle) * jointPosSignList[i]};
+            childState.twist = {-omega * jointPosSignList[i]};
             visuals[i]->set(childState.pose);
             msg.data[i] = childState;
         }

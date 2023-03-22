@@ -3,40 +3,49 @@
 
 
 #include <Eigen/Dense>
-#include <vector>
+#include <boost/array.hpp>
 
 struct StateProvider
 {
-    const std::vector<double> pose;
-    const std::vector<double> twist;
+    const boost::array<double, 7> pose;
+    const boost::array<double, 6> twist;
 
 
-    StateProvider(const std::vector<double>& pose, const std::vector<double>& twist)
+    StateProvider(const boost::array<double, 7>& pose, const boost::array<double, 6>& twist)
     : pose(pose)
     , twist(twist)
     {}
 
-    StateProvider(const std::vector<double>& pose, const int size)
+    StateProvider(const boost::array<double, 7>& pose)
     : pose(pose)
-    , twist(size, 0)
+    , twist()
     {}
 
-    StateProvider(const int size)
-    : pose(size, 0)
-    , twist(size, 0)
+    StateProvider()
+    : pose()
+    , twist()
     {}
 
-    StateProvider() {}
 
+    template<std::size_t ARRAY_SIZE, std::size_t EXPECTED_SIZE>
+    static inline void assertSize(const boost::array<double, ARRAY_SIZE>& arr)
+    {
+        static_assert(EXPECTED_SIZE <= ARRAY_SIZE);
+#ifndef NDEBUG
+        for (std::size_t idx=EXPECTED_SIZE; idx < ARRAY_SIZE; idx++) {
+            assert(std::abs(arr[idx]) == 0.0);
+        }
+#endif  // NDEBUG
+    }
 
     template<typename T>
     T getPose() const
     {
         if constexpr (std::is_same<T, double>::value) {
-            assert(pose.size() == 1);
+            assertSize<7,1>(pose);
             return pose.front();
         } else {
-            assert(pose.size() == T::RowsAtCompileTime);
+            assertSize<7,T::RowsAtCompileTime>(pose);
             return T(pose.data());
         }
     }
@@ -45,10 +54,10 @@ struct StateProvider
     T getTwist() const
     {
         if constexpr (std::is_same<T, double>::value) {
-            assert(twist.size() == 1);
+            assertSize<6,1>(twist);
             return twist.front();
         } else {
-            assert(twist.size() == T::RowsAtCompileTime);
+            assertSize<6,T::RowsAtCompileTime>(twist);
             return T(twist.data());
         }
     }

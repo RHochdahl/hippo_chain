@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(hippo_chain)
 
-set(CMAKE_BUILD_TYPE Debug)     # TODO
+set(CMAKE_BUILD_TYPE Release)     # TODO
 set(GCC_COVERAGE_COMPILE_FLAGS "-Wreturn-type -Werror=return-type")
 
 add_definitions(${GCC_COVERAGE_COMPILE_FLAGS})

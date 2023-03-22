@@ -4,6 +4,7 @@
 
 #include <hippo_chain/include/common/typedefs.h>
 #include <hippo_chain/include/common/ConfigProvider.h>
+#include <hippo_chain/include/common/sharedAlgorithms.hpp>
 #include <geometry_msgs/PoseWithCovariance.h>
 #include <geometry_msgs/TwistWithCovariance.h>
 
@@ -29,21 +30,21 @@ public:
     JointVector zeta;                       // joint velocities
 
 
-    std::vector<double> coordsToVector() const
+    boost::array<double,7> coordsToVector() const
     {
         if constexpr (DOF == 1) {
-            return std::vector<double>(1, theta);
+            return boost::array<double,7>({theta});
         } else {
-            return std::vector<double>(theta.data(), theta.data()+DOF);
+            return shared::toArray<7>(theta);
         }
     }
 
-    std::vector<double> velToVector() const
+    boost::array<double,6> velToVector() const
     {
         if constexpr (DOF == 1) {
-            return std::vector<double>(1, zeta);
+            return boost::array<double,6>({zeta});
         } else {
-            return std::vector<double>(zeta.data(), zeta.data()+DOF);
+            return shared::toArray<6>(zeta);
         }
     }
 
