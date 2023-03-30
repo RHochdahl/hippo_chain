@@ -18,6 +18,8 @@
 #include "target_modes/joint_modes/JointSetpointMode.h"
 #include "target_modes/triangle_modes/TriangleCircleMode.h"
 
+#include <hippo_chain/include/chain_planner/Targed4d.h>
+
 
 class ChainPlanner : public ChainNodeTemplate
 {
@@ -114,14 +116,14 @@ private:
             targetMode.reset(new TargetMode());
         }
 
-        setBaseState(config.x, config.y, config.z, TO_RAD*config.yaw);
+        setBaseState(Target4d({config.x, config.y, config.z, TO_RAD*config.yaw}));
         setChildStates(TO_RAD*config.jointAngle);
     }
 
     void setModeJointAngle(hippo_chain::ChainTargetConfig &config, const bool reset)
     {
         if (reset){
-            setBaseState(NEUTRAL_POSE);
+            setBaseState(Target4d({NEUTRAL_POSE}));
             switch (config.jointMode)
             {
             case 0:
@@ -129,7 +131,7 @@ private:
                 break;
 
             case 1:
-                targetMode.reset(new JointSineWaveMode(TO_RAD*config.Amplitude, config.Period, config.Duration, boost::bind(&ChainPlanner::setChildStates, this, _1, _2)));
+                targetMode.reset(new JointSineWaveMode(TO_RAD*config.Amplitude, config.Period, config.Duration, boost::bind(&ChainPlanner::setChildStates, this, _1, _2, _3)));
                 break;
 
             case 2:
@@ -158,7 +160,7 @@ private:
             switch (config.triangleMode)
             {
             case 0:
-                targetMode.reset(new TriangleCircleMode(config.Center_x, config.Center_y, config.Radius, -config.Depth, config.Period, config.Duration, boost::bind(&ChainPlanner::setBaseState, this, _1, _2, _3, _4, _5, _6, _7, _8)));
+                targetMode.reset(new TriangleCircleMode(config.Center_x, config.Center_y, config.Radius, -config.Depth, config.Period, config.Duration, boost::bind(&ChainPlanner::setBaseState, this, _1, _2, _3)));
                 break;
             
             default:
@@ -179,19 +181,25 @@ private:
 */
     }
 
-    void setBaseState(const double x, const double y, const double z, const double yaw)
+    void setBaseState(const Target4d& poseTarget)
     {
-        setBaseState(x, y, z, yaw, 0.0, 0.0, 0.0, 0.0);
+        setBaseState(poseTarget, Target4d(), Target4d());
     }
 
-    void setBaseState(const double x, const double y, const double z, const double yaw,
-                      const double u, const double v, const double w, const double omega)
+    void setBaseState(const Target4d& poseTarget, const Target4d& twistTarget)
+    {
+        setBaseState(poseTarget, twistTarget, Target4d());
+    }
+
+
+    void setBaseState(const Target4d& poseTarget, const Target4d& twistTarget, const Target4d& accelTarget)
     {
         hippo_chain::ChainVehicleState baseState;
         baseState.vehicle_id = idList->at(0);
-        const double halfYaw = yaw / 2;
-        baseState.pose = {x, y, z, std::cos(halfYaw), 0, 0, std::sin(halfYaw)};
-        baseState.twist = {u, v, w, 0.0, 0.0, omega};
+        const double halfYaw = poseTarget.phi / 2;
+        baseState.pose = {poseTarget.x, poseTarget.y, poseTarget.z, std::cos(halfYaw), 0, 0, std::sin(halfYaw)};
+        baseState.twist = {twistTarget.x, twistTarget.y, twistTarget.z, 0.0, 0.0, twistTarget.phi};
+        baseState.accel = {accelTarget.x, accelTarget.y, accelTarget.z, 0.0, 0.0, accelTarget.phi};
         visuals.front()->set(baseState.pose);
         msg.data.front() = baseState;
         for (int i=1; i<numVehicles; i++) {
@@ -201,10 +209,15 @@ private:
 
     void setChildStates(const double angle)
     {
-        setChildStates(angle, 0.0);
+        setChildStates(angle, 0.0, 0.0);
     }
 
     void setChildStates(const double angle, const double omega)
+    {
+        setChildStates(angle, omega, 0.0);
+    }
+
+    void setChildStates(const double angle, const double omega, const double omegaDot)
     {
         const double maxAngle = 2 * M_PI / std::max(numVehicles, 3);
         for (int i=1; i<numVehicles; i++) {
@@ -212,6 +225,7 @@ private:
             childState.vehicle_id = idList->at(i);
             childState.pose = {-std::max(std::min(angle, maxAngle), -maxAngle) * jointPosSignList[i]};
             childState.twist = {-omega * jointPosSignList[i]};
+            childState.accel = {-omegaDot * jointPosSignList[i]};
             visuals[i]->set(childState.pose);
             msg.data[i] = childState;
         }
@@ -244,7 +258,7 @@ public:
     {
         addVehicles(vehicles);
         msg.data.resize(numVehicles);
-        setBaseState(NEUTRAL_POSE);
+        setBaseState(Target4d({NEUTRAL_POSE}));
         setChildStates(0.0);
         server.setCallback(f);
         ROS_INFO("Constructed chain planner for %i vehicles", numVehicles);
@@ -261,7 +275,7 @@ public:
 
             if (targetMode->set()) {
                 mode = 0;
-                setBaseState(NEUTRAL_POSE);
+                setBaseState(Target4d({NEUTRAL_POSE}));
                 setChildStates(0.0);
             }
             publish();

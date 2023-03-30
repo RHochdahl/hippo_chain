@@ -10,19 +10,20 @@ class JointSineWaveMode : public ContinuousMode
 private:
     double amplitude;
     double frequency;
-    boost::function<void(double, double)> setAngleFunction;
+    boost::function<void(double, double, double)> setAngleFunction;
 
     void step(double time)
     {
         const double phase = frequency*time;
         const double angle = amplitude * std::sin(phase);
         const double omega = amplitude*frequency * std::cos(phase);
-        setAngleFunction(angle, omega);
+        const double omegaDot = -frequency*frequency * angle;
+        setAngleFunction(angle, omega, omegaDot);
     }
 
 
 public:
-    JointSineWaveMode(const double _amplitude, const double _period, const double _duration, boost::function<void(double, double)> _setAngleFunction)
+    JointSineWaveMode(const double _amplitude, const double _period, const double _duration, boost::function<void(double, double, double)> _setAngleFunction)
     : ContinuousMode(_duration)
     , amplitude(_amplitude)
     , frequency(2*M_PI/_period)

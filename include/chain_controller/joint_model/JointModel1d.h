@@ -32,8 +32,8 @@ public:
 
     void update(const std::shared_ptr<StateProvider> newState)
     {
-        theta = newState->getPose<JointVector>();
-        zeta = newState->getTwist<JointVector>();
+        theta = newState->get_pose<JointVector>();
+        zeta = newState->get_twist<JointVector>();
         calcA();
         xiRel = mapVelocity(zeta);
         if (!bounds->checkBounds(theta, zeta)) ROS_WARN_THROTTLE(5.0, "Joint out of bounds!");

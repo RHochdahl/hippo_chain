@@ -31,7 +31,7 @@ private:
             startPoint = -1;
         }
 
-        setAngleFunction(amplitude*phase, velocity);
+        setAngleFunction(amplitude*phase, direction*velocity);
     }
 
 
@@ -39,8 +39,8 @@ public:
     JointRampWaveMode(const double _amplitude, const double _period, const double _duration, boost::function<void(double, double)> _setAngleFunction)
     : ContinuousMode(_duration)
     , amplitude(_amplitude)
-    , frequency(1.0/_period)
-    , velocity(4*_amplitude/_period)
+    , frequency(4.0/_period)
+    , velocity(4.0*_amplitude/_period)
     , startPoint(0)
     , direction(1)
     , setAngleFunction(_setAngleFunction)

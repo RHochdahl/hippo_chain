@@ -3,6 +3,7 @@
 
 
 #include <ros/ros.h>
+#include <hippo_chain/include/chain_planner/Targed4d.h>
 
 
 class TargetMode

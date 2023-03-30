@@ -17,7 +17,12 @@ namespace shared
 
     static inline bool isUnitQuaternion(const Eigen::Vector4d& quat)
     {
-        return (std::abs(quat.norm() - 1.0) < 1e-3);
+        return (std::abs(quat.squaredNorm() - 1.0) < 1e-3);
+    }
+
+    static inline bool isUnitQuaternion(const Eigen::Quaterniond& quat)
+    {
+        return (std::abs(quat.squaredNorm() - 1.0) < 1e-3);
     }
 
     static inline Eigen::Vector6d cross6(const Eigen::Vector6d& first, const Eigen::Vector6d& second)

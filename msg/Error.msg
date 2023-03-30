@@ -2,3 +2,4 @@ Header header
 ChainVehicleState state
 ChainVehicleState des_state
 ChainVehicleState error
+ChainVehicleState sigma

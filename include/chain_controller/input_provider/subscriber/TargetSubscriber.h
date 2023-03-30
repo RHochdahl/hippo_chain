@@ -21,7 +21,7 @@ public:
         timer.stop();
         for (auto vehicleState : msg.data) {
             setState(vehicleState.vehicle_id,
-                     std::make_shared<StateProvider>(vehicleState.pose, vehicleState.twist));
+                     std::make_shared<StateProvider>(vehicleState.pose, vehicleState.twist, vehicleState.accel));
         }
         updated = true;
         timer.start();

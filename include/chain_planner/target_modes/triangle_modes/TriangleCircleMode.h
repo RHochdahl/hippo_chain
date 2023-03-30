@@ -8,21 +8,17 @@ class TriangleCircleMode : public ContinuousMode
 {
 private:
     double centerX, centerY, radius, depth, frequency;
-    boost::function<void(double, double, double, double, double, double, double, double)> setBaseFunction;
+    boost::function<void(Target4d, Target4d, Target4d)> setBaseFunction;
 
     void step(const double time)
     {
         const double phase = frequency*time;
-        const double sinPhase = std::sin(phase);
-        const double cosPhase = std::cos(phase);
-        const double x = centerX + radius*std::sin(phase);
-        const double y = centerY - radius*std::cos(phase);
 
-        const double vMax = frequency*radius;
-        const double u = vMax*std::cos(phase);
-        const double v = vMax*std::sin(phase);
+        const Target4d poseTarget{centerX + radius*std::sin(phase), centerY - radius*std::cos(phase), depth, phase};
+        const Target4d twistTarget{frequency*radius, 0.0, 0.0, frequency};
+        const Target4d accelTarget{0.0, frequency*twistTarget.x, 0.0, 0.0};
 
-        setBaseFunction(x, y, depth, phase, u, v, 0.0, frequency);
+        setBaseFunction(poseTarget, twistTarget, accelTarget);
     }
 
 
@@ -33,7 +29,7 @@ public:
                        const double _depth,
                        const double _period,
                        const double _duration,
-                       boost::function<void(double, double, double, double, double, double, double, double)> _setBaseFunction)
+                       boost::function<void(Target4d, Target4d, Target4d)> _setBaseFunction)
     : ContinuousMode(_duration)
     , centerX(_centerX)
     , centerY(_centerY)

@@ -30,6 +30,7 @@ private:
     struct ControllerStates {
         typename JointModel::JointVector thetaDes;
         typename JointModel::JointVector zetaDes;
+        typename JointModel::JointVector zetaDotDes;
         Eigen::Vector6d beta;
         Eigen::Vector6d betaDot;
         typename JointModel::JointVector sigma;
@@ -100,28 +101,33 @@ public:
         debugger.addEntry("desired pose", desiredState->pose.data(), desiredState->pose.size());
         debugger.addEntry("desired twist", desiredState->twist.data(), desiredState->twist.size());
 
-        controllerStates.thetaDes = desiredState->getPose<typename JointModel::JointVector>();
-        controllerStates.zetaDes = desiredState->getTwist<typename JointModel::JointVector>();
+        controllerStates.thetaDes = desiredState->get_pose<typename JointModel::JointVector>();
+        controllerStates.zetaDes = desiredState->get_twist<typename JointModel::JointVector>();
+        controllerStates.zetaDotDes = desiredState->get_accel<typename JointModel::JointVector>();
         jointModel.enforceBounds(controllerStates.thetaDes, controllerStates.zetaDes);
         debugger.addEntry("bounded desired pose", controllerStates.thetaDes);
         debugger.addEntry("bounded desired twist", controllerStates.zetaDes);
+        debugger.addEntry("bounded desired accel", controllerStates.zetaDotDes);
         const typename JointModel::JointVector angleError = limitError(typename JointModel::JointVector(controllerStates.thetaDes - jointModel.theta), param.maxAngularError);
         const typename JointModel::JointVector twistError = controllerStates.zetaDes - jointModel.zeta;
         controllerStates.sigma = controllerStates.zetaDes + param.kSigma * angleError;
 
-        {
+        if (errorPub.getNumSubscribers()) {
             hippo_chain::Error errorMsg;
             errorMsg.header.stamp       = ros::Time::now();
             errorMsg.state.pose         = shared::toArray<7>(jointModel.theta);
             errorMsg.state.twist        = shared::toArray<6>(jointModel.zeta);
             errorMsg.des_state.pose     = shared::toArray<7>(controllerStates.thetaDes);
             errorMsg.des_state.twist    = shared::toArray<6>(controllerStates.zetaDes);
+            errorMsg.des_state.accel    = shared::toArray<6>(controllerStates.zetaDotDes);
             errorMsg.error.pose         = shared::toArray<7>(angleError);
             errorMsg.error.twist        = shared::toArray<6>(twistError);
+            errorMsg.sigma.pose         = shared::toArray<7>(controllerStates.sigma);
+            errorMsg.sigma.twist        = shared::toArray<6>(controllerStates.sigmaDot);
             errorPub.publish(errorMsg);
         }
 
-        controllerStates.sigmaDot = param.kSigma * twistError;
+        controllerStates.sigmaDot = controllerStates.zetaDotDes + param.kSigma * twistError;
         debugger.addEntry("sigma", controllerStates.sigma);
         debugger.addEntry("d/dt sigma", controllerStates.sigmaDot);
 

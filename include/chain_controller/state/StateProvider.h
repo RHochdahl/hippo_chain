@@ -9,21 +9,31 @@ struct StateProvider
 {
     const boost::array<double, 7> pose;
     const boost::array<double, 6> twist;
+    const boost::array<double, 6> accel;
 
+
+    StateProvider(const boost::array<double, 7>& pose, const boost::array<double, 6>& twist, const boost::array<double, 6>& accel)
+    : pose(pose)
+    , twist(twist)
+    , accel(accel)
+    {}
 
     StateProvider(const boost::array<double, 7>& pose, const boost::array<double, 6>& twist)
     : pose(pose)
     , twist(twist)
+    , accel()
     {}
 
     StateProvider(const boost::array<double, 7>& pose)
     : pose(pose)
     , twist()
+    , accel()
     {}
 
     StateProvider()
     : pose()
     , twist()
+    , accel()
     {}
 
 
@@ -38,29 +48,24 @@ struct StateProvider
 #endif  // NDEBUG
     }
 
-    template<typename T>
-    T getPose() const
-    {
-        if constexpr (std::is_same<T, double>::value) {
-            assertSize<7,1>(pose);
-            return pose.front();
-        } else {
-            assertSize<7,T::RowsAtCompileTime>(pose);
-            return T(pose.data());
-        }
+
+#define DEFINE_GET_STATE(name, dim) \
+    template<typename T>\
+    T get_##name() const\
+    {\
+        if constexpr (std::is_same<T, double>::value) {\
+            assertSize<dim,1>(name);\
+            return name.front();\
+        } else {\
+            assertSize<dim,T::RowsAtCompileTime>(name);\
+            return T(name.data());\
+        }\
     }
 
-    template<typename T>
-    T getTwist() const
-    {
-        if constexpr (std::is_same<T, double>::value) {
-            assertSize<6,1>(twist);
-            return twist.front();
-        } else {
-            assertSize<6,T::RowsAtCompileTime>(twist);
-            return T(twist.data());
-        }
-    }
+DEFINE_GET_STATE(pose, 7)
+DEFINE_GET_STATE(twist, 6)
+DEFINE_GET_STATE(accel, 6)
+
 };
 
 

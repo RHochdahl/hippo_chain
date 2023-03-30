@@ -59,6 +59,8 @@ class Node():
         base_vehicle = ChainVehicleState()
         base_vehicle.pose = [x, y, z, qw, qx, qy, qz]
         base_vehicle.twist = [0.0] * 6
+        base_vehicle.accel = [0.0] * 6
+        base_vehicle.accel = [0.0] * 6
         base_vehicle.vehicle_id = 0
 
         data.append(base_vehicle)
@@ -66,7 +68,8 @@ class Node():
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
         child_vehicle_1.pose = [alpha, beta, 0.0, 0.0, 0.0, 0.0, 0.0]
-        child_vehicle_1.twist = [0.0]*6
+        child_vehicle_1.twist = [0.0] * 6
+        child_vehicle_1.accel = [0.0] * 6
         
         data.append(child_vehicle_1)
 
@@ -74,7 +77,8 @@ class Node():
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            child_vehicle_i.twist = [0.0]*6
+            child_vehicle_i.twist = [0.0] * 6
+            child_vehicle_i.accel = [0.0] * 6
             
             data.append(child_vehicle_i)
 
@@ -86,6 +90,7 @@ class Node():
         base_vehicle = ChainVehicleState()
         base_vehicle.pose = [self.__x-self.__offset*np.cos(self.__yaw), self.__y-self.__offset*np.sin(self.__yaw), self.__z, np.cos(0.5*self.__yaw), 0.0, 0.0, np.sin(0.5*self.__yaw)]
         base_vehicle.twist = [0.0] * 6
+        base_vehicle.accel = [0.0] * 6
         base_vehicle.vehicle_id = 0
 
         data.append(base_vehicle)
@@ -93,7 +98,8 @@ class Node():
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
         child_vehicle_1.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        child_vehicle_1.twist = [0.0]*6
+        child_vehicle_1.twist = [0.0] * 6
+        child_vehicle_1.accel = [0.0] * 6
         
         data.append(child_vehicle_1)
 
@@ -101,7 +107,8 @@ class Node():
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            child_vehicle_i.twist = [0.0]*6
+            child_vehicle_i.twist = [0.0] * 6
+            child_vehicle_i.accel = [0.0] * 6
             
             data.append(child_vehicle_i)
 
@@ -113,22 +120,25 @@ class Node():
         base_vehicle = ChainVehicleState()
         base_vehicle.pose = [self.__x-self.__offset*np.cos(self.__yaw), self.__y-self.__offset*np.sin(self.__yaw), self.__z, np.cos(0.5*self.__yaw), 0.0, 0.0, np.sin(0.5*self.__yaw)]
         base_vehicle.twist = [0.0] * 6
+        base_vehicle.accel = [0.0] * 6
         base_vehicle.vehicle_id = 0
 
         data.append(base_vehicle)
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [0.0]*7
-        child_vehicle_1.twist = [0.0]*6
+        child_vehicle_1.pose = [0.0] * 7
+        child_vehicle_1.twist = [0.0] * 6
+        child_vehicle_1.accel = [0.0] * 6
         
         data.append(child_vehicle_1)
 
         for i in range(1):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
-            child_vehicle_i.pose = [0.0]*7
-            child_vehicle_i.twist = [0.0]*6
+            child_vehicle_i.pose = [0.0] * 7
+            child_vehicle_i.twist = [0.0] * 6
+            child_vehicle_i.accel = [0.0] * 6
             
             data.append(child_vehicle_i)
 

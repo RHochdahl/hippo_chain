@@ -6,7 +6,7 @@
 #include <hippo_chain/FixBase.h>
 
 
-// #define IGNORE_Z_ERROR
+#define IGNORE_Z_ERROR
 
 
 class BaseVehicleController : public VehicleController
@@ -25,6 +25,7 @@ private:
     struct ControllerStates {
         Eigen::Vector7d desiredPose;
         Eigen::Vector6d desiredTwist;
+        Eigen::Vector6d desiredAccel;
         Eigen::Vector6d sigma;
         Eigen::Vector6d sigmaDot;
     } controllerStates;
@@ -60,51 +61,62 @@ private:
             return;
         }
 
-        controllerStates.desiredPose = desiredState->getPose<Eigen::Vector7d>();
-        controllerStates.desiredTwist = desiredState->getTwist<Eigen::Vector6d>();
+        controllerStates.desiredPose = desiredState->get_pose<Eigen::Vector7d>();
+        controllerStates.desiredTwist = desiredState->get_twist<Eigen::Vector6d>();
+        controllerStates.desiredAccel = desiredState->get_accel<Eigen::Vector6d>();
         debugger.addEntry("desired pose", desiredState->pose.data(), desiredState->pose.size());
         debugger.addEntry("desired twist", desiredState->twist.data(), desiredState->twist.size());
+        debugger.addEntry("desired accel", desiredState->accel.data(), desiredState->accel.size());
 
-        if (!shared::isUnitQuaternion(controllerStates.desiredPose.bottomRows<4>())) throw quaternion_error(controllerStates.desiredPose.bottomRows<4>());
-        if (!shared::isUnitQuaternion(poseAbs.bottomRows<4>())) throw quaternion_error(poseAbs.bottomRows<4>());
+        const Eigen::Quaterniond quatDes(controllerStates.desiredPose[3],
+                                         controllerStates.desiredPose[4],
+                                         controllerStates.desiredPose[5],
+                                         controllerStates.desiredPose[6]);
+        const Eigen::Quaterniond quatActInv(poseAbs[3],
+                                            -poseAbs[4],
+                                            -poseAbs[5],
+                                            -poseAbs[6]);
 
-        const double rQuatDes = controllerStates.desiredPose[3];
-        const Eigen::Vector3d iQuatDes = controllerStates.desiredPose.bottomRows<3>();
-        const double rQuatAct = poseAbs[3];
-        const Eigen::Vector3d iQuatAct = poseAbs.bottomRows<3>();
+        if (!shared::isUnitQuaternion(quatDes)) throw quaternion_error(quatDes);
+        if (!shared::isUnitQuaternion(quatActInv)) throw quaternion_error(quatActInv);
+
+        debugger.addEntry("desired orientation", quatDes.coeffs());
+
+        const Eigen::Quaterniond quatErr = quatActInv * quatDes;
+        debugger.addEntry("quat error", quatErr.coeffs().data(), 4U);
 
         // rotation matrix R^1_0 or S_K'K to rotate vector from world to base frame
-        const Eigen::Matrix3d R_1_0 = Eigen::Quaterniond(poseAbs[3], -poseAbs[4], -poseAbs[5], -poseAbs[6]).toRotationMatrix();
-        debugger.addEntry("R", R_1_0);
+        const Eigen::Matrix3d R_1_0 = quatActInv.toRotationMatrix();
+        debugger.addEntry("R_1_0", R_1_0);
+        const Eigen::Matrix3d R_1_1des = quatErr.toRotationMatrix();
+        debugger.addEntry("R_1_1des", R_1_1des);
 
         const Eigen::Vector3d posErr = limitError(Eigen::Vector3d(R_1_0 * (controllerStates.desiredPose.topRows<3>() - poseAbs.topRows<3>())), param.maxPositionError);
-        const int etaErrSgn = shared::sgn(rQuatAct*rQuatDes + iQuatAct.dot(iQuatDes));
-        const Eigen::Vector3d epsilonErr = limitError(Eigen::Vector3d(etaErrSgn * (rQuatAct * iQuatDes - rQuatDes * iQuatAct + iQuatDes.cross(iQuatAct))), param.maxQuaternionError);;
-        const double etaErr = std::sqrt(1.0 - epsilonErr.squaredNorm());
+        const Eigen::Vector3d epsilonErr = limitError(Eigen::Vector3d(shared::sgn(quatErr.w()) * quatErr.vec()), param.maxQuaternionError);
+        const double etaErr = std::sqrt(1 - epsilonErr.squaredNorm());
         debugger.addEntry("position error", posErr);
         debugger.addEntry("epsilon error", epsilonErr);
         debugger.addEntry("eta error", etaErr);
 
         const double k = 2.0 * param.kSigma2 / etaErr;
 
-        const Eigen::Vector3d xiLinDes = R_1_0 * controllerStates.desiredTwist.topRows<3>();
-        const Eigen::Vector3d xiAngDes = R_1_0 * controllerStates.desiredTwist.bottomRows<3>();
+        // Requirement: des twist and actual twist in base frame
+        const Eigen::Vector3d xiAngDes = R_1_1des * controllerStates.desiredTwist.bottomRows<3>();
+        const Eigen::Vector3d xiLinDes = R_1_1des * controllerStates.desiredTwist.topRows<3>() + posErr.cross(xiAngDes);
 
         controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * posErr;
         controllerStates.sigma.bottomRows<3>() = xiAngDes + k * epsilonErr;
         debugger.addEntry("sigma/beta", controllerStates.sigma);
 
-        // Requirement: des twist in world frame, actual twist in base frame
         const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
         const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows<3>();
         const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(omegaErr);   // _2 because the factor 0.5 is applied later
-#ifndef NDEBUG
         debugger.addEntry("d/dt position error", posErrDot);
         debugger.addEntry("d/dt epsilon error", 0.5*epsilonErrDot_2);
-#endif  // NDEBUG
 
-        const Eigen::Vector3d xiLinDesDot = xiLinDes.cross(xiAbs.bottomRows<3>());
-        const Eigen::Vector3d xiAngDesDot = xiAngDes.cross(xiAbs.bottomRows<3>());
+        const Eigen::Vector3d temp = R_1_1des * controllerStates.desiredAccel.bottomRows<3>();
+        const Eigen::Vector3d xiLinDesDot = omegaErr.cross(xiLinDes) + posErrDot.cross(xiAngDes) + R_1_1des * controllerStates.desiredAccel.topRows<3>() + posErr.cross(temp);
+        const Eigen::Vector3d xiAngDesDot = omegaErr.cross(xiAngDes) + temp;
 
         controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
         controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * k * epsilonErrDot_2;
@@ -114,7 +126,7 @@ private:
         controllerStates.sigma(2) = controllerStates.sigmaDot(2) = 0.0;
 #endif  // IGNORE_Z_ERROR
 
-        {
+        if (errorPub.getNumSubscribers()) {
             hippo_chain::Error errorMsg;
             errorMsg.header.stamp = ros::Time::now();
             std::copy(poseAbs.data(), poseAbs.data()+7, errorMsg.state.pose.data());
@@ -122,10 +134,12 @@ private:
             std::copy(controllerStates.desiredPose.data(), controllerStates.desiredPose.data()+7, errorMsg.des_state.pose.data());
             std::copy(controllerStates.desiredTwist.data(), controllerStates.desiredTwist.data()+6, errorMsg.des_state.twist.data());
             std::copy(posErr.data(), posErr.data()+3, errorMsg.error.pose.data());
-            errorMsg.error.pose[3] = etaErr;
-            std::copy(posErr.data()+4, posErr.data()+7, errorMsg.error.pose.data()+4);
+            std::copy(quatErr.coeffs().data(), quatErr.coeffs().data()+4, errorMsg.error.pose.data()+4);
             std::copy(posErrDot.data(), posErrDot.data()+3, errorMsg.error.twist.data());
             std::copy(omegaErr.data(), omegaErr.data()+3, errorMsg.error.twist.data()+3);
+            std::copy(controllerStates.desiredAccel.data(), controllerStates.desiredAccel.data()+6, errorMsg.des_state.accel.data());
+            std::copy(controllerStates.sigma.data(), controllerStates.sigma.data()+6, errorMsg.sigma.pose.data());
+            std::copy(controllerStates.sigmaDot.data(), controllerStates.sigmaDot.data()+6, errorMsg.sigma.twist.data());
             errorPub.publish(errorMsg);
         }
     }
@@ -171,8 +185,8 @@ public:
             return;
         }
 
-        poseAbs = newState->getPose<Eigen::Vector7d>();
-        xiAbs = newState->getTwist<Eigen::Vector6d>();
+        poseAbs = newState->get_pose<Eigen::Vector7d>();
+        xiAbs = newState->get_twist<Eigen::Vector6d>();
         debugger.addEntry("abs pose", poseAbs);
         debugger.addEntry("abs vel", xiAbs);
     }

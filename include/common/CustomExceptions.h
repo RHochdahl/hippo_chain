@@ -32,6 +32,11 @@ public:
                                                                                                      ",\ty: " + std::to_string(quat(2)) +
                                                                                                      ",\tz: " + std::to_string(quat(3)) +
                                                                                                      ",\tnorm: " + std::to_string(quat.norm()) + ")!") {}
+    quaternion_error(const Eigen::Quaterniond& quat) : auto_print_error("Quaternion is not unit quaternion (w: " + std::to_string(quat.w()) +
+                                                                                                        ",\tx: " + std::to_string(quat.x()) +
+                                                                                                        ",\ty: " + std::to_string(quat.y()) +
+                                                                                                        ",\tz: " + std::to_string(quat.w()) +
+                                                                                                        ",\tnorm: " + std::to_string(quat.norm()) + ")!") {}
 };
 
 class timeout_error : public auto_print_error
