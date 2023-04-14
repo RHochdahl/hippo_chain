@@ -144,7 +144,8 @@ public:
         debugger.addEntry("beta", controllerStates.beta);
         debugger.addEntry("d/dt beta", controllerStates.betaDot);
 
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.beta, controllerStates.betaDot, &debugger);
+        vehicleModel.setVelocity(xiAbs);
+        tau = vehicleModel.calcWrenches(controllerStates.beta, controllerStates.betaDot, &debugger);
         debugger.addEntry("tau", tau);
     }
 

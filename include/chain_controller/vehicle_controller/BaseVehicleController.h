@@ -6,7 +6,7 @@
 #include <hippo_chain/FixBase.h>
 
 
-#define IGNORE_Z_ERROR
+// #define IGNORE_Z_ERROR
 
 
 class BaseVehicleController : public VehicleController
@@ -110,7 +110,7 @@ private:
 
         const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
         const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows<3>();
-        const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(omegaErr);   // _2 because the factor 0.5 is applied later
+        const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(xiAngDes + xiAbs.bottomRows<3>());   // _2 because the factor 0.5 is applied later
         debugger.addEntry("d/dt position error", posErrDot);
         debugger.addEntry("d/dt epsilon error", 0.5*epsilonErrDot_2);
 
@@ -201,7 +201,8 @@ public:
         if (desiredState == NULL) throw auto_print_error("Desired state is not initialized!");
 
         calcSigma(desiredState);
-        tau = vehicleModel.calcWrenches(xiAbs, controllerStates.sigma, controllerStates.sigmaDot, &debugger);
+        vehicleModel.setVelocity(xiAbs);
+        tau = vehicleModel.calcWrenches(controllerStates.sigma, controllerStates.sigmaDot, &debugger);
         debugger.addEntry("tau", tau);
     }
 

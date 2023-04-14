@@ -54,7 +54,7 @@ class Node():
         R = tf.euler_matrix(self.__yaw, self.__pitch, self.__roll, "rzyx")
         [x, y, z] = np.array([self.__x, self.__y, self.__z]) - self.__offset * R[:3, 0]
         [qx, qy, qz, qw] = tf.quaternion_from_matrix(R)
-        [alpha, beta, trash] = tf.euler_from_matrix(np.transpose(R), "rzxz")
+        # [alpha, beta, trash] = tf.euler_from_matrix(np.transpose(R), "rzxz")
 
         base_vehicle = ChainVehicleState()
         base_vehicle.pose = [x, y, z, qw, qx, qy, qz]
@@ -67,13 +67,13 @@ class Node():
 
         child_vehicle_1 = ChainVehicleState()
         child_vehicle_1.vehicle_id = 1
-        child_vehicle_1.pose = [alpha, beta, 0.0, 0.0, 0.0, 0.0, 0.0]
+        child_vehicle_1.pose = [-self.__roll, -self.__pitch, 0.0, 0.0, 0.0, 0.0, 0.0]
         child_vehicle_1.twist = [0.0] * 6
         child_vehicle_1.accel = [0.0] * 6
         
         data.append(child_vehicle_1)
 
-        for i in range(1):
+        for i in range(2):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -103,7 +103,7 @@ class Node():
         
         data.append(child_vehicle_1)
 
-        for i in range(1):
+        for i in range(2):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [2*np.pi/3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -133,7 +133,7 @@ class Node():
         
         data.append(child_vehicle_1)
 
-        for i in range(1):
+        for i in range(2):
             child_vehicle_i = ChainVehicleState()
             child_vehicle_i.vehicle_id = 2+i
             child_vehicle_i.pose = [0.0] * 7

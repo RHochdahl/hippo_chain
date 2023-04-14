@@ -19,12 +19,19 @@
 class VehicleModel
 {
 private:
-    double rigidMass;
-    Eigen::Vector3d inertia;
-    Eigen::Vector3d addedMass;
-    Eigen::Vector6d inertias;
-    Eigen::Vector6d linDragCoeff;
-    Eigen::Vector6d quadDragCoeff;
+    struct VehicleParams {
+        double rigidMass;
+        Eigen::Vector3d inertia;
+        Eigen::Vector3d addedMass;
+        Eigen::Vector6d inertias;
+        Eigen::Vector6d linDragCoeff;
+        Eigen::Vector6d quadDragCoeff;
+    } params;
+
+    struct VehicleState {
+        Eigen::Vector6d absVel;
+        Eigen::Vector6d buoyancyForce;
+    } state;
 
 
 public:
@@ -35,31 +42,41 @@ public:
 
         // don't use iterators as performance is irrelevant here
 
-        rigidMass = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_mass", 0.0);
+        params.rigidMass = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_mass", 0.0);
         for (int i=0; i<3; i++) {
-            addedMass(i) = configProvider->getValuePositiveWithDefault(nsExtension + "added_mass/" + poseStr[i], 0.0);
-            inertias(i) = rigidMass + addedMass(i);
+            params.addedMass(i) = configProvider->getValuePositiveWithDefault(nsExtension + "added_mass/" + poseStr[i], 0.0);
+            params.inertias(i) = params.rigidMass + params.addedMass(i);
         }
 
         for (int i=3; i<6; i++) {
-            inertias(i) = inertia(i-3) = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_inertia/" + poseStr[i], 0.0)
-                                       + configProvider->getValuePositiveWithDefault(nsExtension + "added_inertia/" + poseStr[i], 0.0);
+            params.inertias(i) = params.inertia(i-3) = configProvider->getValuePositiveWithDefault(nsExtension + "rigid_inertia/" + poseStr[i], 0.0)
+                                                     + configProvider->getValuePositiveWithDefault(nsExtension + "added_inertia/" + poseStr[i], 0.0);
         }
 
         for (int i=0; i<6; i++) {
-            linDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/linear/" + poseStr[i], 0.0);
-            quadDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/quadratic/" + poseStr[i], 0.0);
+            params.linDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/linear/" + poseStr[i], 0.0);
+            params.quadDragCoeff(i) = configProvider->getValuePositiveWithDefault(nsExtension + "drag/quadratic/" + poseStr[i], 0.0);
         }
+
+        state.absVel.setZero();
+        state.buoyancyForce.setZero();
     }
 
     ~VehicleModel()
     {}
 
 
-    Eigen::Vector6d calcWrenches(const Eigen::Vector6d& absVel,
-                                 const Eigen::Vector6d& beta,
-                                 const Eigen::Vector6d& dbeta,
-                                 Debugger* debugger=NULL) const
+    virtual void setOrientation(const Eigen::Matrix3d R)
+    {}
+
+    void setVelocity(const Eigen::Vector6d& absVel)
+    {
+        state.absVel = absVel;
+    }
+
+    virtual Eigen::Vector6d calcWrenches(const Eigen::Vector6d& vel,
+                                         const Eigen::Vector6d& acc,
+                                         Debugger* debugger=NULL) const
     {
         // zero net buoyancy is assumed
 
@@ -69,67 +86,67 @@ public:
 #ifdef USE_ORIGINAL_DESIGN
 
         // coriolis wrenches
-        const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
+        const Eigen::Vector6d momentum = params.inertias.cwiseProduct(state.absVel);
 
-        result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(momentum.topRows<3>());
-        result.bottomRows<3>().noalias()    = beta.bottomRows<3>().cross(momentum.bottomRows<3>())
-                                            + beta.topRows<3>().cross(momentum.topRows<3>());
+        result.topRows<3>().noalias()       = vel.bottomRows<3>().cross(momentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = vel.bottomRows<3>().cross(momentum.bottomRows<3>())
+                                            + vel.topRows<3>().cross(momentum.topRows<3>());
 
 #ifndef NDEBUG
         if (debugger) {
             debugger->addEntry("coriolis wrenches", result);
-            debugger->addEntry("inertial wrenches", inertias.cwiseProduct(dbeta));
-            debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(beta));
-            debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs()));
+            debugger->addEntry("inertial wrenches", params.inertias.cwiseProduct(acc));
+            debugger->addEntry("linear drag", params.linDragCoeff.cwiseProduct(vel));
+            debugger->addEntry("quadratic drag", params.quadDragCoeff.cwiseProduct(vel).cwiseProduct(state.absVel.cwiseAbs()));
         }
 #endif  // NDEBUG
 
         // drag wrenches
-        result.noalias() += linDragCoeff.cwiseProduct(beta);
-        result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
+        result.noalias() += params.linDragCoeff.cwiseProduct(vel);
+        result.noalias() += params.quadDragCoeff.cwiseProduct(vel).cwiseProduct(state.absVel.cwiseAbs());
 
 #else  // USE_ORIGINAL_DESIGN
 #ifndef USE_ACTUAL_VELOCITY
         // coriolis wrenches
-        const Eigen::Vector3d addedLinearMomentum = addedMass.cwiseProduct(absVel.topRows<3>());
-        const Eigen::Vector3d angularMomentum = inertia.cwiseProduct(absVel.bottomRows<3>());
+        const Eigen::Vector3d addedLinearMomentum = params.addedMass.cwiseProduct(state.absVel.topRows<3>());
+        const Eigen::Vector3d angularMomentum = params.inertia.cwiseProduct(state.absVel.bottomRows<3>());
 
-        result.topRows<3>().noalias()       = beta.bottomRows<3>().cross(addedLinearMomentum);
-                                            + rigidMass * absVel.bottomRows<3>().cross(beta.topRows<3>());
-        result.bottomRows<3>().noalias()    = beta.bottomRows<3>().cross(angularMomentum)
-                                            + beta.topRows<3>().cross(addedLinearMomentum);
+        result.topRows<3>().noalias()       = vel.bottomRows<3>().cross(addedLinearMomentum);
+                                            + params.rigidMass * state.absVel.bottomRows<3>().cross(vel.topRows<3>());
+        result.bottomRows<3>().noalias()    = vel.bottomRows<3>().cross(angularMomentum)
+                                            + vel.topRows<3>().cross(addedLinearMomentum);
 
 #ifndef NDEBUG
         if (debugger) {
             debugger->addEntry("coriolis wrenches", result);
-            debugger->addEntry("inertial wrenches", inertias.cwiseProduct(dbeta));
-            debugger->addEntry("linear drag", linDragCoeff.cwiseProduct(beta));
-            debugger->addEntry("quadratic drag", quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs()));
+            debugger->addEntry("inertial wrenches", params.inertias.cwiseProduct(acc));
+            debugger->addEntry("linear drag", params.linDragCoeff.cwiseProduct(vel));
+            debugger->addEntry("quadratic drag", params.quadDragCoeff.cwiseProduct(vel).cwiseProduct(state.absVel.cwiseAbs()));
         }
 #endif  // NDEBUG
 
         // drag wrenches
-        result.noalias() += linDragCoeff.cwiseProduct(beta);
-        result.noalias() += quadDragCoeff.cwiseProduct(beta).cwiseProduct(absVel.cwiseAbs());
+        result.noalias() += params.linDragCoeff.cwiseProduct(vel);
+        result.noalias() += params.quadDragCoeff.cwiseProduct(vel).cwiseProduct(state.absVel.cwiseAbs());
 
 #else  // USE_ACTUAL_VELOCITY
 
         // coriolis wrenches
-        const Eigen::Vector6d momentum = inertias.cwiseProduct(absVel);
+        const Eigen::Vector6d momentum = params.inertias.cwiseProduct(state.absVel);
 
-        result.topRows<3>().noalias()       = absVel.bottomRows<3>().cross(momentum.topRows<3>());
-        result.bottomRows<3>().noalias()    = absVel.bottomRows<3>().cross(momentum.bottomRows<3>())
-                                            + absVel.topRows<3>().cross(momentum.topRows<3>());
+        result.topRows<3>().noalias()       = state.absVel.bottomRows<3>().cross(momentum.topRows<3>());
+        result.bottomRows<3>().noalias()    = state.absVel.bottomRows<3>().cross(momentum.bottomRows<3>())
+                                            + state.absVel.topRows<3>().cross(momentum.topRows<3>());
 
         // drag wrenches
-        result.noalias() += linDragCoeff.cwiseProduct(absVel);
-        result.noalias() += quadDragCoeff.cwiseProduct(absVel).cwiseProduct(absVel.cwiseAbs());
+        result.noalias() += params.linDragCoeff.cwiseProduct(state.absVel);
+        result.noalias() += params.quadDragCoeff.cwiseProduct(state.absVel).cwiseProduct(state.absVel.cwiseAbs());
 
 #endif  // USE_ACTUAL_VELOCITY
 #endif  // USE_ORIGINAL_DESIGN
 
         // inertial wrenches
-        result.noalias() += inertias.cwiseProduct(dbeta);
+        result.noalias() += params.inertias.cwiseProduct(acc);
 
 #else  // USE_MODEL
         result.setZero();
