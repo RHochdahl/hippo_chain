@@ -17,7 +17,7 @@ private:
         double kSigma2;
         double kP;
         double kSat;
-        double lim;
+        double rho;
         double maxPositionError;
         double maxQuaternionError;
     } param;
@@ -42,7 +42,7 @@ private:
         param.kSigma2 = config.kSigma2;
         param.kP = config.kP;
         param.kSat = config.kSat;
-        param.lim = config.lim;
+        param.rho = config.rho;
         param.maxPositionError = config.maxPositionError;
         param.maxQuaternionError = config.maxQuaternionError;
         ROS_INFO("Updated base controller parameters for '%s'", nh->getNamespace().c_str());
@@ -98,19 +98,17 @@ private:
         debugger.addEntry("epsilon error", epsilonErr);
         debugger.addEntry("eta error", etaErr);
 
-        const double k = 2.0 * param.kSigma2 / etaErr;
-
         // Requirement: des twist and actual twist in base frame
         const Eigen::Vector3d xiAngDes = R_1_1des * controllerStates.desiredTwist.bottomRows<3>();
         const Eigen::Vector3d xiLinDes = R_1_1des * controllerStates.desiredTwist.topRows<3>() + posErr.cross(xiAngDes);
 
         controllerStates.sigma.topRows<3>() = xiLinDes + param.kSigma1 * posErr;
-        controllerStates.sigma.bottomRows<3>() = xiAngDes + k * epsilonErr;
+        controllerStates.sigma.bottomRows<3>() = xiAngDes + param.kSigma2 * epsilonErr;
         debugger.addEntry("sigma/beta", controllerStates.sigma);
 
         const Eigen::Vector3d posErrDot = xiLinDes - xiAbs.topRows<3>();
         const Eigen::Vector3d omegaErr = xiAngDes - xiAbs.bottomRows<3>();
-        const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + epsilonErr.cross(xiAngDes + xiAbs.bottomRows<3>());   // _2 because the factor 0.5 is applied later
+        const Eigen::Vector3d epsilonErrDot_2 = etaErr*omegaErr + omegaErr.cross(epsilonErr);   // _2 because the factor 0.5 is applied later
         debugger.addEntry("d/dt position error", posErrDot);
         debugger.addEntry("d/dt epsilon error", 0.5*epsilonErrDot_2);
 
@@ -119,7 +117,7 @@ private:
         const Eigen::Vector3d xiAngDesDot = omegaErr.cross(xiAngDes) + temp;
 
         controllerStates.sigmaDot.topRows<3>() = xiLinDesDot + param.kSigma1 * posErrDot;
-        controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * k * epsilonErrDot_2;
+        controllerStates.sigmaDot.bottomRows<3>() = xiAngDesDot + 0.5 * param.kSigma2 * epsilonErrDot_2;
         debugger.addEntry("d/dt sigma/beta", controllerStates.sigmaDot);
 
 #ifdef IGNORE_Z_ERROR
@@ -242,7 +240,7 @@ public:
 
         const Eigen::Vector6d s = controllerStates.sigma - xiAbs;
         debugger.addEntry("s", s);
-        eta.topRows<6>() = tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+        eta.topRows<6>() = tau + param.kP * s + param.kSat * shared::sat(s, param.rho);
         debugger.addEntry("eta", eta.topRows<6>());
     }
 

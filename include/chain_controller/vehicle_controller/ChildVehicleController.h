@@ -22,7 +22,7 @@ private:
         double kSigma;
         double kP;
         double kSat;
-        double lim;
+        double rho;
         double maxAngularError;
         double lsqWeight;
     } param;
@@ -44,7 +44,7 @@ private:
         param.kSigma = config.kSigma;
         param.kP = config.kP;
         param.kSat = config.kSat;
-        param.lim = config.lim;
+        param.rho = config.rho;
         param.maxAngularError = config.maxAngularError;
         param.lsqWeight = config.lsqWeight;
         ROS_INFO("Updated child controller parameters for '%s'", nh->getNamespace().c_str());
@@ -156,11 +156,11 @@ public:
         const typename JointModel::JointVector s = controllerStates.sigma - jointModel.zeta;
         debugger.addEntry("s", s);
         if constexpr (std::is_same<typename JointModel::JointVector, double>::value) {
-            eta(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(std::abs(s), param.lim);
+            eta(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * shared::sat(s, param.rho);
             debugger.addEntry("eta", eta(idx));
             eta(idx) *= param.lsqWeight;
         } else {
-            eta.middleRows<JointModel::DOF>(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * s / std::max(s.norm(), param.lim);
+            eta.middleRows<JointModel::DOF>(idx) = jointModel.Phi.transpose() * tau + param.kP * s + param.kSat * shared::sat(s, param.rho);
             debugger.addEntry("eta", eta.middleRows<JointModel::DOF>(idx));
             eta.middleRows<JointModel::DOF>(idx) *= param.lsqWeight;
         }

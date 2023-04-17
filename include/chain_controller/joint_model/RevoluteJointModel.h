@@ -84,7 +84,7 @@ private:
         switch (axis)
         {
         case Axis::x:
-            Phi << 0, 0, 0, 0, 1, 0;
+            Phi << 0, 0, 0, 1, 0, 0;
             break;
 
         case Axis::y:

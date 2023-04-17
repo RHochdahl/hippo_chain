@@ -44,14 +44,13 @@ private:
 
     void initPhi()
     {
-        Phi_1 = calcPhiVector(axes[0]);
+        Phi.col(0) = calcPhiVector(axes[0]);
         Phi.col(1) = calcPhiVector(axes[1]);
     }
 
     void calcPhi()
     {
-        Phi.col(0).topRows<3>() = R_2 * Phi_1.topRows<3>();
-        Phi.col(0).bottomRows<3>() = R_2 * Phi_1.bottomRows<3>();
+        Phi.col(0) = calcPhiVector(axes[0],R_2);
     }
 
     void initTheta()
@@ -63,21 +62,21 @@ private:
     {
         Eigen::Matrix3d dR_2 = Eigen::Matrix3d::Zero();
 
-        switch (axes[0])
+        switch (axes[1])
         {
         case Axis::x:
-            dR_2.col(1) = zeta(1)*R_2.col(2);
-            dR_2.col(2) = -zeta(1)*R_2.col(1);
+            dR_2.col(1) = R_2.col(2);
+            dR_2.col(2) = -R_2.col(1);
             break;
 
         case Axis::y:
-            dR_2.col(2) = zeta(1)*R_2.col(0);
-            dR_2.col(0) = -zeta(1)*R_2.col(2);
+            dR_2.col(2) = R_2.col(0);
+            dR_2.col(0) = -R_2.col(2);
             break;
 
         case Axis::z:
-            dR_2.col(0) = zeta(1)*R_2.col(1);
-            dR_2.col(1) = -zeta(1)*R_2.col(0);
+            dR_2.col(0) = R_2.col(1);
+            dR_2.col(1) = -R_2.col(0);
             break;
 
         default:
@@ -85,32 +84,42 @@ private:
             break;
         }
 
-        Theta.col(1).topRows<3>() = dR_2 * Phi_1.topRows<3>();
-        Theta.col(1).bottomRows<3>() = dR_2 * Phi_1.bottomRows<3>();
+        Theta.col(0) = zeta(1)*calcPhiVector(axes[0], dR_2);
     }
 
     Eigen::Vector6d calcPhiVector(const Axis& axis) const
     {
-        Eigen::Vector6d PhiVector;
+        return calcPhiVector(axis, Eigen::Matrix3d::Identity());
+    }
+
+    Eigen::Vector6d calcPhiVector(const Axis& axis, const Eigen::Matrix3d& Ri) const
+    {
+        int col;
 
         switch (axis)
         {
         case Axis::x:
-            PhiVector << 0, 0, 0, 1, 0, 0;
+            col = 0;
             break;
 
         case Axis::y:
-            PhiVector << 0, 0, jointPosX, 0, 1, 0;
+            col = 1;
             break;
 
         case Axis::z:
-            PhiVector << 0, -jointPosX, 0, 0, 0, 1;
+            col = 2;
             break;
 
         default:
             throw std::runtime_error("Unknown Axis");
             break;
         }
+        Eigen::Vector6d PhiVector;
+
+        PhiVector(0) = 0;
+        PhiVector(1) = -jointPosX * Ri(2,col);
+        PhiVector(2) = jointPosX * Ri(1,col);
+        PhiVector.bottomRows(3) = Ri.col(col);
 
         return PhiVector;
     }

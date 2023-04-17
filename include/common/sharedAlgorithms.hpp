@@ -33,6 +33,34 @@ namespace shared
         return res;
     }
 
+    static inline double sat(const double in, const double rho)
+    {
+        const double out = rho*in;
+        if (out > 1.0) return 1.0;
+        if (out < -1.0) return -1.0;
+        return out;
+    }
+
+    template<int Dim>
+    static inline Eigen::Matrix<double,Dim,1> sat(const Eigen::Matrix<double,Dim,1>& in, const double rho)
+    {
+        Eigen::Matrix<double,Dim,1> out;
+        for (auto inIt=in.data(), outIt=out.data(), end=outIt+Dim; outIt!=end; inIt++, outIt++) {
+            *outIt = sat(*inIt, rho);
+        }
+        return out;
+    }
+
+    template<int Dim>
+    static inline Eigen::Matrix<double,Dim,1> sat(const Eigen::Matrix<double,Dim,1>& in, const Eigen::Matrix<double,Dim,1>& rho)
+    {
+        Eigen::Matrix<double,Dim,1> out;
+        for (auto inIt=in.data(), rhoIt=rho.data(), outIt=out.data(), end=outIt+Dim; outIt!=end; inIt++, rhoIt++, outIt++) {
+            *outIt = sat(*inIt, *rhoIt);
+        }
+        return out;
+    }
+
 
     template<std::size_t N>
     static inline boost::array<double, N> toArray(const double* data, const std::size_t size)
